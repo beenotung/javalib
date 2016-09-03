@@ -8,6 +8,19 @@ public class Main {
     println("Test begin");
     println();
 
+    println("io: ");
+    {
+      print("input name:");
+      String name = in.nextLine();
+      println("name=" + name);
+      print("input two number");
+      int a = in.nextInt();
+      int b = in.nextInt();
+      println(a);
+      println(b);
+    }
+    println();
+
     println("monad: ");
     Functional.IMonad ma = unit(1);
     Functional.IMonad mb = ma.map(a -> (int) a + 2);
