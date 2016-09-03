@@ -138,6 +138,9 @@ public class Functional {
     IList<A> reverse();
 
     @Override
+    String toString();
+
+    @Override
     <B> IList<B> map(IFunc<A, B> f);
 
     @Override
@@ -228,6 +231,11 @@ public class Functional {
       @Override
       public void ap(IApply<A> f) {
       }
+
+      @Override
+      public String toString() {
+        return "[]";
+      }
     };
   }
 
@@ -308,6 +316,16 @@ public class Functional {
       @Override
       public void ap(IApply<A> f) {
         throw new Error("unsupported");
+      }
+
+      @Override
+      public String toString() {
+        return tail.foldr(new IFunc<Pair<A, String>, String>() {
+          @Override
+          public String apply(Pair<A, String> pair) {
+            return pair.b() + ", " + pair.a();
+          }
+        }, "[" + head) + "]";
       }
     };
   }

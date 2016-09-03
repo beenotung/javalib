@@ -28,9 +28,10 @@ public class Main {
     println("length_1: " + list1.size());
     IList list2 = list1.map(a -> (int) a * 10);
     println("length_2: " + list2.size());
-    println("1: " + list1.toJList());
-    println("2: " + list2.toJList());
-    println("r: " + list2.reverse().toJList());
+    println("1: " + list1);
+    println("2: " + list2);
+    println("r: " + list2.reverse());
+    println("empty: " + list());
 
     println("Test end");
   }
