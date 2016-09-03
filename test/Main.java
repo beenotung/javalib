@@ -1,7 +1,6 @@
 import github.com.beenotung.javalib.Functional;
 
-import static github.com.beenotung.javalib.Functional.maybe;
-import static github.com.beenotung.javalib.Functional.monad;
+import static github.com.beenotung.javalib.Functional.*;
 import static github.com.beenotung.javalib.Utils.*;
 
 public class Main {
@@ -10,19 +9,28 @@ public class Main {
     println();
 
     println("monad: ");
-    Functional.IMonad ma = monad.unit(1);
+    Functional.IMonad ma = unit(1);
     Functional.IMonad mb = ma.map(a -> (int) a + 2);
     mb.ap(b -> println("value: " + b));
     println();
 
     println("maybe: ");
-    Functional.IMonad some = maybe.unit(1);
+    Functional.IMonad some = maybe(1);
     some.map(a -> (int) a + 1)
       .ap(x -> println("some: " + x));
-    Functional.IMonad none = maybe.unit(null);
+    Functional.IMonad none = maybe(null);
     none.map(a -> (int) a + 1)
       .ap(x -> println("none: " + x));
     println();
+
+    println("list: ");
+    Functional.IList<Object> list1 = list().append(1).append(2).append(3).append(4);
+    println("length_1: " + list1.size());
+    IList list2 = list1.map(a -> (int) a * 10);
+    println("length_2: " + list2.size());
+    println("1: " + list1.toJList());
+    println("2: " + list2.toJList());
+    println("r: " + list2.reverse().toJList());
 
     println("Test end");
   }
