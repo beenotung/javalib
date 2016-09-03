@@ -32,7 +32,7 @@ public class Main {
     println("2: " + list2);
     println("r: " + list2.reverse());
     println("empty: " + list());
-    int n = 10000;
+    int n = 20;
     Integer[] arr = new Integer[n];
     for (int i = 0; i < n; i++) {
       arr[i] = i;
@@ -44,7 +44,7 @@ public class Main {
       public Object apply(Long i) {
         return i;
       }
-    }, 10));
+    }, 32767));
     println("even: " + l10.filter(new IFunc<Integer, Boolean>() {
       @Override
       public Boolean apply(Integer integer) {
@@ -59,11 +59,11 @@ public class Main {
     }).reduce(new IFunc<Pair<Integer, Integer>, Integer>() {
       @Override
       public Integer apply(Pair<Integer, Integer> p) {
-//        println(p.a()+" : "+p.b());
         return p.a() + p.b();
       }
     }));
-    println("small: " + l10.take(5L));
+    println("take 5: " + l10.take(5L));
+    println("take 10, drop 5: " + l10.take(10L).drop(5L));
 
     println("Test end");
   }

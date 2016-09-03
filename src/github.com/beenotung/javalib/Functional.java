@@ -158,7 +158,7 @@ public class Functional {
 
     IList<A> take(Long n) throws Exception;
 
-    IList<A> drop(Long n);
+    IList<A> drop(Long n) throws Exception;
 
     /* f: (acc,current)=>result */
     A reduce(IFunc<Pair<A, A>, A> f) throws Exception;
@@ -369,23 +369,28 @@ public class Functional {
 
       @Override
       public IList<A> take(Long n) throws Exception {
-        println("take: " + n);
         Pair<IList<A>, Long> res = foldl(new IFunc<Pair<Pair<IList<A>, Long>, A>, Pair<IList<A>, Long>>() {
           @Override
           public Pair<IList<A>, Long> apply(Pair<Pair<IList<A>, Long>, A> p) throws Exception {
             if (p.a().b() <= 0)
               throw early_terminate;
-            return pair(p.a().b() > 0
-              ? p.a().a().prepend(p.b())
-              : p.a().a(), p.a().b() - 1);
+            return pair(p.a().a().prepend(p.b()), p.a().b() - 1);
           }
         }, pair(Nil, n));
         return res.a().reverse();
       }
 
       @Override
-      public IList<A> drop(Long n) {
-        return null;
+      public IList<A> drop(Long n) throws Exception {
+        Pair<IList<A>, Long> res = foldl(new IFunc<Pair<Pair<IList<A>, Long>, A>, Pair<IList<A>, Long>>() {
+          @Override
+          public Pair<IList<A>, Long> apply(Pair<Pair<IList<A>, Long>, A> p) throws Exception {
+            if (p.a().b() <= 0)
+              throw early_terminate;
+            return pair(p.a().a().tail(),p.a().b()-1);
+          }
+        }, pair(this, n));
+        return res.a();
       }
 
       @Override
