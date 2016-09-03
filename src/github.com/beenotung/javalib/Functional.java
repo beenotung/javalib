@@ -3,6 +3,8 @@ package github.com.beenotung.javalib;
 import java.util.LinkedList;
 import java.util.function.Function;
 
+import static github.com.beenotung.javalib.Utils.println;
+
 public class Functional {
   public interface IFunc<A, B> {
     B apply(A a);
@@ -127,11 +129,13 @@ public class Functional {
 
     IList<A> concat(IList<A> xs);
 
-    IList<A> append(A a);
+    IList<A> prepend(A a);
 
     long size();
 
     <B> B foldr(IFunc<Pair<A, B>, B> f, B acc);
+
+    <B> B foldl(IFunc<Pair<B, A>, B> f, B acc);
 
     LinkedList<A> toJList();
 
@@ -170,7 +174,7 @@ public class Functional {
   public static final IList Nil = list();
 
   public static <A> IList<A> list() {
-    return new IList<A>() {
+    return Nil == null ? new IList<A>() {
 
       @Override
       public A head() {
@@ -188,7 +192,7 @@ public class Functional {
       }
 
       @Override
-      public IList<A> append(A a) {
+      public IList<A> prepend(A a) {
         return list(a, this);
       }
 
@@ -229,6 +233,11 @@ public class Functional {
       }
 
       @Override
+      public <B> B foldl(IFunc<Pair<B, A>, B> f, B acc) {
+        return acc;
+      }
+
+      @Override
       public void ap(IApply<A> f) {
       }
 
@@ -236,14 +245,14 @@ public class Functional {
       public String toString() {
         return "[]";
       }
-    };
+    } : Nil;
   }
 
-  public static <A> IList<A> list(A head) {
+  public static <A> IList<A> list(final A head) {
     return list(head, Nil);
   }
 
-  public static <A> IList<A> list(A head, IList<A> tail) {
+  public static <A> IList<A> list(final A head, final IList<A> tail) {
     return new IList<A>() {
       @Override
       public A head() {
@@ -261,7 +270,7 @@ public class Functional {
       }
 
       @Override
-      public IList<A> append(A a) {
+      public IList<A> prepend(A a) {
         return list(a, this);
       }
 
@@ -298,14 +307,26 @@ public class Functional {
         return foldr(new IFunc<Pair<A, IList<A>>, IList<A>>() {
           @Override
           public IList<A> apply(Pair<A, IList<A>> pair) {
-            return pair.b().append(pair.a());
+            return pair.b().prepend(pair.a());
           }
         }, Nil);
       }
 
       @Override
       public <B> B foldr(IFunc<Pair<A, B>, B> f, B acc) {
-        return tail.foldr(f, f.apply(pair(head, acc)));
+        return f.apply(pair(head, tail.foldr(f, acc)));
+      }
+
+      @Override
+      public <B> B foldl(IFunc<Pair<B, A>, B> f, B acc) {
+        IList<A> t = tail.prepend(head).prepend(null);
+        for (; ; ) {
+          t = t.tail();
+          if (t.equals(Nil))
+            break;
+          acc = f.apply(pair(acc, t.head()));
+        }
+        return acc;
       }
 
       @Override
@@ -320,15 +341,30 @@ public class Functional {
 
       @Override
       public String toString() {
-        return tail.foldr(new IFunc<Pair<A, String>, String>() {
+        String s = foldl(new IFunc<Pair<String, A>, String>() {
           @Override
-          public String apply(Pair<A, String> pair) {
-            return pair.b() + ", " + pair.a();
+          public String apply(Pair<String, A> pair) {
+            return pair.a() + ", " + pair.b();
           }
-        }, "[" + head) + "]";
+        }, "");
+        return "[" + s.substring(2) + "]";
       }
     };
   }
 
+  public static <A> IList<A> fromArray(A[] xs) {
+    IList<A> res = list();
+    for (int i = xs.length - 1; i >= 0; i--) {
+      res = res.prepend(xs[i]);
+    }
+    return res;
+  }
 
+  public static <A> IList<A> createList(IFunc<Long, A> f, long size) {
+    IList<A> res = list();
+    for (long i = size - 1; i >= 0; i--) {
+      res = res.prepend(f.apply(i));
+    }
+    return res;
+  }
 }
