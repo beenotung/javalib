@@ -5,6 +5,9 @@ public class Utils {
     System.out.print(msg);
   }
 
+  public static void println() {
+    System.out.println();
+  }
   public static void println(Object msg) {
     System.out.println(msg);
   }
