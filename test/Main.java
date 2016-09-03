@@ -4,7 +4,7 @@ import static github.com.beenotung.javalib.Functional.*;
 import static github.com.beenotung.javalib.Utils.*;
 
 public class Main {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Throwable {
     println("Test begin");
     println();
 
@@ -32,17 +32,38 @@ public class Main {
     println("2: " + list2);
     println("r: " + list2.reverse());
     println("empty: " + list());
-    Integer[] arr = new Integer[10];
-    for (int i = 0; i < 10; i++) {
+    int n = 10000;
+    Integer[] arr = new Integer[n];
+    for (int i = 0; i < n; i++) {
       arr[i] = i;
     }
-    println("from array: " + fromArray(arr));
+    IList<Integer> l10 = fromArray(arr);
+    println("from array: " + l10);
     println("created: " + createList(new IFunc<Long, Object>() {
       @Override
       public Object apply(Long i) {
         return i;
       }
     }, 10));
+    println("even: " + l10.filter(new IFunc<Integer, Boolean>() {
+      @Override
+      public Boolean apply(Integer integer) {
+        return integer % 2 == 0;
+      }
+    }));
+    println("div: " + l10.filter(new IFunc<Integer, Boolean>() {
+      @Override
+      public Boolean apply(Integer integer) {
+        return integer > 0 && integer < 10;
+      }
+    }).reduce(new IFunc<Pair<Integer, Integer>, Integer>() {
+      @Override
+      public Integer apply(Pair<Integer, Integer> p) {
+//        println(p.a()+" : "+p.b());
+        return p.a() + p.b();
+      }
+    }));
+    println("small: " + l10.take(5L));
 
     println("Test end");
   }
