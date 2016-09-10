@@ -1,10 +1,23 @@
 import github.com.beenotung.javalib.Functional;
+import github.com.beenotung.javalib.Utils;
 
 import static github.com.beenotung.javalib.Functional.*;
-import static github.com.beenotung.javalib.Utils.*;
+import static github.com.beenotung.javalib.Utils.Functional.compose;
+import static github.com.beenotung.javalib.Utils.in;
+import static github.com.beenotung.javalib.Utils.print;
+import static github.com.beenotung.javalib.Utils.println;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
+    Utils.Functional.LazyArrayList<Integer> as = new Utils.Functional.LazyArrayList<Integer>();
+    as.list.add(1);
+    as.list.add(10);
+    Utils.Functional.LazyArrayList<Integer> bs = as.map(a -> a * 10);
+    println("as: "+as);
+    println("bs: "+bs);
+  }
+
+  public static void main_old(String[] args) throws Throwable {
     println("Test begin");
     println();
 
@@ -39,7 +52,7 @@ public class Main {
     println("list: ");
     Functional.IList<Object> list1 = list().prepend(1).prepend(2).prepend(3).prepend(4);
     println("length_1: " + list1.size());
-    IList list2 = list1.map(a -> (int) a * 10);
+    Functional.IList list2 = list1.map(a -> (int) a * 10);
     println("length_2: " + list2.size());
     println("1: " + list1);
     println("2: " + list2);
@@ -50,7 +63,7 @@ public class Main {
     for (int i = 0; i < n; i++) {
       arr[i] = i;
     }
-    IList<Integer> l10 = fromArray(arr);
+    Functional.IList<Integer> l10 = fromArray(arr);
     println("from array: " + l10);
     println("created: " + createList(new IFunc<Long, Object>() {
       @Override

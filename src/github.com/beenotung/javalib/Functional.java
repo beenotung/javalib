@@ -3,8 +3,9 @@ package github.com.beenotung.javalib;
 import java.util.LinkedList;
 import java.util.function.Function;
 
-import static github.com.beenotung.javalib.Utils.println;
-
+/**
+ * @deprecated
+ */
 public class Functional {
   public interface IFunc<A, B> {
     B apply(A a) throws Exception;
@@ -387,7 +388,7 @@ public class Functional {
           public Pair<IList<A>, Long> apply(Pair<Pair<IList<A>, Long>, A> p) throws Exception {
             if (p.a().b() <= 0)
               throw early_terminate;
-            return pair(p.a().a().tail(),p.a().b()-1);
+            return pair(p.a().a().tail(), p.a().b() - 1);
           }
         }, pair(this, n));
         return res.a();
