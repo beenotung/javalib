@@ -3,6 +3,7 @@ package github.com.beenotung.javalib;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -32,6 +33,19 @@ public class Utils {
     return a1 == null || a2 == null
       ? null
       : a1;
+  }
+
+  public static boolean instanceOf(Class aClass, Object a, Object b) {
+    return aClass.isInstance(a) && aClass.isInstance(b);
+  }
+
+  public static <A extends Number> A sum(A a, A b) {
+    if (instanceOf(Integer.class, a, b))
+      return (A) Integer.valueOf(a.intValue() + b.intValue());
+    else if (instanceOf(Float.class, a, b))
+      return (A) Float.valueOf(a.floatValue() + b.floatValue());
+      /* TODO detect more case */
+    else return (A) Double.valueOf(a.doubleValue() + b.doubleValue());
   }
 
   public static class Functional {
@@ -196,6 +210,12 @@ public class Utils {
         return res;
       }
 
+      public <B> B foldl(Func2<B, A, B> f, B init) {
+        AtomicReference<B> acc = new AtomicReference<B>(init);
+        stream().forEachOrdered(c -> acc.set(f.apply(acc.get(), c)));
+        return acc.get();
+      }
+
       public Stream<A> stream() {
         return this.list.stream().map(new Function<A, A>() {
           @Override
@@ -211,10 +231,37 @@ public class Utils {
         return res;
       }
 
+      /* compact the chained map */
+      public synchronized void update() {
+        list = build();
+        f = a -> (A) a;
+      }
+
       @Override
       public String toString() {
         return build().toString();
       }
+    }
+
+    /* slow, unsafe */
+    public static <A extends Number> A sum(LazyArrayList<A> m) {
+      return m.stream().reduce(Utils::sum).get();
+    }
+
+    public static int sumInt(LazyArrayList<Integer> a) {
+      return a.stream().reduce((acc, c) -> acc + c).orElse(0);
+    }
+
+    public static long sumLong(LazyArrayList<Long> a) {
+      return a.stream().reduce((acc, c) -> acc + c).orElse(0l);
+    }
+
+    public static double sumDouble(LazyArrayList<Double> a) {
+      return a.stream().reduce((acc, c) -> acc + c).orElse(0d);
+    }
+
+    public static float sumFloat(LazyArrayList<Float> a) {
+      return a.stream().reduce((acc, c) -> acc + c).orElse(0f);
     }
   }
 }
