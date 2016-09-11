@@ -7,23 +7,26 @@ import static github.com.beenotung.javalib.Utils.*;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
-    println("testing LazyArrayList");
-    Utils.LazyArrayList<Integer> as = Utils.LazyArrayList.tabulate(10, i -> i, Integer.class);
-    as.list.add(10);
-    as.list.add(11);
-    Utils.LazyArrayList<Integer> bs = as.map(a -> a * 10);
-    println("as: " + as);
-    println("bs: " + bs);
-    println();
-    println("testing FArray");
-    FArray<Character> cs = FArray.fromString("this is a long text").filter(c -> c.charValue() != 'a');
-    println("size: " + cs.length);
-    println("upper: " + Utils.toString(cs.map(c -> {
-      if (c >= 'a' && c <= 'z')
-        return Character.valueOf((char) (c + ('A' - 'a')));
-      else
-        return Character.valueOf(c);
-    }, Character.class)));
+//    println("testing LazyArrayList");
+//    Utils.LazyArrayList<Integer> as = Utils.LazyArrayList.tabulate(10, i -> i, Integer.class);
+//    as.list.add(10);
+//    as.list.add(11);
+//    Utils.LazyArrayList<Integer> bs = as.map(a -> a * 10);
+//    println("as: " + as);
+//    println("bs: " + bs);
+//    println();
+    println("testing FList");
+    FList<?, Character> cs = FList.fromString("this is a long text");
+//    println("testing FArray");
+//    FArray<Character> cs = FArray.fromString("this is a long text").filter(c -> c.charValue() != 'a');
+    println("size: " + cs.length());
+    println("upper: "+cs.map(c->c.toUpperCase(c)).toString());
+//    println("upper: " + Utils.toString(cs.map(c -> {
+//      if (c >= 'a' && c <= 'z')
+//        return Character.valueOf((char) (c + ('A' - 'a')));
+//      else
+//        return Character.valueOf(c);
+//    }, Character.class)));
     println("full: " + cs);
     println("groups: " + cs.group(4));
     println("even-groups: " + cs.evenGroup(4));
@@ -50,7 +53,7 @@ public class Main {
     println("monad: ");
     Functional.IMonad ma = unit(1);
     Functional.IMonad mb = ma.map(a -> (int) a + 2);
-    mb.ap(b -> println("value: " + b));
+    mb.ap(b -> println("preValues: " + b));
     println();
 
     println("maybe: ");
