@@ -282,11 +282,7 @@ public class Utils {
       }
 
       public static FArray<Character> fromString(String s) {
-        Character cs[] = new Character[s.length()];
-        for (int i = 0; i < s.toCharArray().length; i++) {
-          cs[i] = s.charAt(i);
-        }
-        return new FArray<Character>(cs);
+        return new FArray<Character>(toChars(s.toCharArray()));
       }
 
       public <B> FArray<B> map(Function<A, B> f, Class<B> bClass) {
@@ -362,6 +358,14 @@ public class Utils {
 
     public static char[] toChars(Character[] as) {
       char[] cs = new char[as.length];
+      for (int i = 0; i < as.length; i++) {
+        cs[i] = as[i];
+      }
+      return cs;
+    }
+
+    public static Character[] toChars(char[] as) {
+      Character[] cs = new Character[as.length];
       for (int i = 0; i < as.length; i++) {
         cs[i] = as[i];
       }
