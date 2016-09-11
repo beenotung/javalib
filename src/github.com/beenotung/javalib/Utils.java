@@ -229,7 +229,7 @@ public class Utils {
 
     @Override
     public String toString() {
-      return Arrays.asList(_1, _2).toString();
+      return Utils.toString(_1, _2);
     }
 
     public <T3> Tuple2<T1, T3> newVal(Func1<T2, T3> f) {
