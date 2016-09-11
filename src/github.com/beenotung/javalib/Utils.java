@@ -349,6 +349,19 @@ public class Utils {
     default A[] toTypedArray() {
       return castArray(toArray(), getComponentType());
     }
+
+    /**
+     * @throws ClassCastException if this stream is not ? extends Number
+     */
+    default Optional<Double> average() {
+      return Utils.average(this.as());
+    }
+
+    /* cast the type */
+    default <B> Stream<B> as() {
+      //return this.map(x -> (B) x);
+      return (Stream<B>) this;
+    }
   }
 
   public static <A> RichStream<A> richStream(Stream<A> stream, Class<A> aClass) {
@@ -564,6 +577,10 @@ public class Utils {
     Class<A> getComponentType();
 
     List<A> list();
+
+    default <B> RichList<B> as() {
+      return (RichList<B>) this;
+    }
 
     default int length() {
       return list().size();
