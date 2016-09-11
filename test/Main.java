@@ -1,6 +1,6 @@
 import github.com.beenotung.javalib.Functional;
 import github.com.beenotung.javalib.Utils;
-import github.com.beenotung.javalib.Utils.Functional.FArray;
+import github.com.beenotung.javalib.Utils.*;
 
 import static github.com.beenotung.javalib.Functional.*;
 import static github.com.beenotung.javalib.Utils.*;
@@ -8,22 +8,25 @@ import static github.com.beenotung.javalib.Utils.*;
 public class Main {
   public static void main(String[] args) throws Throwable {
     println("testing LazyArrayList");
-    Utils.Functional.LazyArrayList<Integer> as = new Utils.Functional.LazyArrayList<Integer>();
-    as.list.add(1);
+    Utils.LazyArrayList<Integer> as = Utils.LazyArrayList.tabulate(10, i -> i, Integer.class);
     as.list.add(10);
-    Utils.Functional.LazyArrayList<Integer> bs = as.map(a -> a * 10);
+    as.list.add(11);
+    Utils.LazyArrayList<Integer> bs = as.map(a -> a * 10);
     println("as: " + as);
     println("bs: " + bs);
     println();
     println("testing FArray");
     FArray<Character> cs = FArray.fromString("this is a long text").filter(c -> c.charValue() != 'a');
     println("size: " + cs.length);
-    println("upper: " + Utils.Functional.toString(cs.map(c -> {
+    println("upper: " + Utils.toString(cs.map(c -> {
       if (c >= 'a' && c <= 'z')
         return Character.valueOf((char) (c + ('A' - 'a')));
       else
         return Character.valueOf(c);
     }, Character.class)));
+    println("full: " + cs);
+    println("groups: " + cs.group(4));
+    println("even-groups: " + cs.evenGroup(4));
     println();
   }
 

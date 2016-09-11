@@ -310,7 +310,11 @@ public class Utils {
 
     @Override
     public String toString() {
-      return build().toString();
+      Object[] as = build().toArray();
+      if (as.length > 0 && as[0] != null && Character.class.equals(as[0].getClass()))
+        return String.valueOf(toChars((Character[]) as));
+      else
+        return Arrays.asList(as).toString();
     }
   }
 
@@ -398,24 +402,87 @@ public class Utils {
       return new FArray<A>((A[]) res);
     }
 
-    public FArray<FArray<A>> group(int group_size, Class<A> classObject) {
-            /* total number of element */
-      final int n = as.length;
-      group_size = Math.min(group_size, as.length);
-      FArray<A>[] res = (FArray<A>[]) new FArray[(int) Math.round(Math.ceil(1.0 * n / group_size))];
-      A[] bs = (A[]) Array.newInstance(classObject, group_size);
-      int i_res = 0;
-      int i_b = 0;
+    public FArray<FArray<A>> group(int group_size) {
+      if (as.length == 0 || group_size == 0)
+        return new FArray(new Object[0]);
+      int n_group = (int) Math.round(Math.ceil(1.0 * as.length / group_size));
+      FArray[] ass = new FArray[n_group];
+      int sizes[] = new int[n_group];
+      int size = as.length / n_group;
+      for (int i = 0; i < n_group; i++) {
+        sizes[i] = size;
+      }
+      for (int i = 0; i < ass.length - size * n_group; i++) {
+        sizes[i]++;
+      }
+      Class aClass = null;
       for (int i = 0; i < as.length; i++) {
-        bs[i_b++] = as[i];
-        if (i_b == group_size) {
-          res[i_res++] = new FArray<A>(bs);
-          group_size = Math.min(group_size, n - group_size * i_res);
-          bs = (A[]) Array.newInstance(classObject, group_size);
-          i_b = 0;
+        if (as[i] != null) {
+          aClass = as[i].getClass();
+          break;
         }
       }
-      return new FArray(res);
+      if (aClass == null)
+        aClass = Object.class;
+      int offset = 0;
+      for (int i = 0; i < n_group; i++) {
+        System.out.println("offset:" + offset);
+        System.out.println("size:" + sizes[i]);
+        ass[i] = new FArray<A>((A[]) Array.newInstance(aClass, sizes[i]));
+        System.arraycopy(
+          as, offset,
+          ass[i].as, 0,
+          sizes[i]
+        );
+        offset += sizes[i];
+      }
+      return new FArray(ass);
+    }
+
+    public FArray<FArray<A>> evenGroup(int n_group) {
+      if (as.length == 0 && n_group == 0) {
+        return new FArray(new FArray[0]);
+      }
+      Class aClass = null;
+      for (A a : as) {
+        if (a != null) {
+          aClass = a.getClass();
+          break;
+        }
+      }
+      if (aClass == null)
+        aClass = Object.class;
+      FArray[] ass = new FArray[n_group];
+      int sizes[] = new int[n_group];
+      int size = as.length / n_group;
+      for (int i = 0; i < ass.length; i++) {
+        sizes[i] = size;
+      }
+      for (int i = 0; i < as.length - size * n_group; i++) {
+        sizes[i]++;
+      }
+      for (int i = 0; i < n_group; i++) {
+        ass[i] = new FArray((A[]) Array.newInstance(aClass, sizes[i]));
+      }
+      int ass_i = 0;
+      int as_i = 0;
+      for (int i = 0; i < as.length; i++) {
+        ass[ass_i].as[as_i] = as[i];
+        ass_i++;
+        if (ass_i == n_group) {
+          ass_i = 0;
+          as_i++;
+        }
+      }
+      return new FArray(ass);
+    }
+
+    @Override
+    public String toString() {
+      if (as.length > 0 && as[0] != null && Character.class.equals(as[0].getClass()))
+        return String.valueOf(toChars((Character[]) as));
+      else
+        return Arrays.asList(as).toString();
     }
   }
 }
