@@ -103,27 +103,19 @@ public class Utils {
     return as;
   }
 
-//  public static <A> A[] tabulate(int n, Function<Integer, A> f) {
-//    if (n == 0)
-//      return (A[]) new Object[0];
-//    Object[] os = new Object[n];
-//    Class componentType = null;
-//    for (int i = 0; i < n; i++) {
-//      os[i] = f.apply(i);
-//      if (componentType == null && os[i] != null) {
-//        componentType = os[i].getClass();
-//      }
-//    }
-//    if (componentType == null)
-//      return (A[]) os;
-//    A as[] = (A[]) Array.newInstance(componentType, n);
-//    System.arraycopy(
-//      os, 0,
-//      as, 0,
-//      n
-//    );
-//    return as;
-//  }
+  public static <A> A[] empty(int n, Class<A> aClass) {
+    return (A[]) Array.newInstance(aClass, n);
+  }
+
+  public static <A> A[][] empty(int n, Func1<Integer, Integer> f, Class<A> aClass) {
+    int avg_length = mkIntStream(n)
+      .map(i -> f.apply(i))
+      .reduce(Utils::sum)
+      .get() / n;
+    A[][] ass = (A[][]) Array.newInstance(aClass, n, avg_length);
+    foreach(n, i -> ass[i] = (A[]) Array.newInstance(aClass, f.apply(i)));
+    return ass;
+  }
 
   public static char[] toChars(ArrayList<Character> as) {
     char[] cs = new char[as.size()];
@@ -590,8 +582,95 @@ public class Utils {
     default RichStream<A> richStream() {
       return Utils.richStream(stream(), getComponentType());
     }
-    default RichList<RichList<A>>group(int group_size){
 
+    default <A> RichList<A> newInstance(RichList<A> as, Class<A> aClass) {
+      return newInstance(as.list(), aClass);
+    }
+
+    default <A> RichList<A> newInstance(Collection<A> as, Class<A> aClass) {
+      try {
+        RichList<A> res = getClass().newInstance();
+        res.setUnderneath(as, aClass);
+        return res;
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new Error("the subclass should have empty constructor");
+      }
+    }
+
+    default <A> RichList<A> newInstance(A[] as, Class<A> aClass) {
+      try {
+        RichList<A> res = getClass().newInstance();
+        res.setUnderneath(as, aClass);
+        return res;
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new Error("the subclass of RichList (" + getClass().getName() + ") should have empty constructor");
+      }
+    }
+
+    default RichList<RichList<A>> group(int group_size) {
+      /* total number of element */
+      int n = length();
+      Class<A> aClass = getComponentType();
+      if (n == 0 || group_size == 0) {
+        return newInstance((RichList[]) Array.newInstance(getClass(), 0), (Class<RichList<A>>) getClass());
+      }
+      int n_group = (int) Math.round(Math.ceil(1.0 * n / group_size));
+      int size = n / n_group;
+      final Integer sizes[] = fill(n_group, size);
+      foreach(n - size * n_group, i -> sizes[i]++);
+      A[][] ass = Utils.empty(n_group, i -> sizes[i], aClass);
+      int offset = 0;
+      A[] as = toTypedArray();
+      for (int i = 0; i < n_group; i++) {
+        System.arraycopy(
+          as, offset,
+          ass[i], 0,
+          sizes[i]
+        );
+        offset += sizes[i];
+      }
+      RichList<A>[] res = Utils.empty(n_group, getClass());
+      foreach(n_group, i -> res[i] = newInstance((A[]) ass[i], aClass));
+      return newInstance(res, (Class<RichList<A>>) getClass());
+    }
+
+    default RichList<RichList<A>> evenGroup(int n_group) {
+      /* total number of element */
+      int n = length();
+      if (n == 0 || n_group == 0)
+        return newInstance((RichList[]) Array.newInstance(getClass(), 0), (Class<RichList<A>>) getClass());
+      Class<A> aClass = getComponentType();
+      int size = n / n_group;
+      final Integer[] sizes = Utils.fill(n_group, size);
+      foreach(n - size * n_group, i -> sizes[i]++);
+      A[][] ass = Utils.empty(n_group, i -> sizes[i], aClass);
+      int ass_i = 0;
+      int as_i = 0;
+      A[] as = toTypedArray();
+      for (int i = 0; i < n; i++) {
+        ass[ass_i][as_i] = as[i];
+        if (++ass_i == n_group) {
+          ass_i = 0;
+          as_i++;
+        }
+      }
+      RichList<A>[] res = Utils.empty(n_group, getClass());
+      foreach(n_group, i -> res[i] = newInstance(ass[i], aClass));
+      return newInstance(res, (Class<RichList<A>>) getClass());
+    }
+  }
+
+  public static Stream<Integer> mkIntStream(int n) {
+    return mkIntStream(0, n);
+  }
+
+  public static Stream<Integer> mkIntStream(int offset, int count) {
+    return new ArrayList<>(Arrays.asList(tabulate(count, i -> i + offset))).stream();
+  }
+
+  public static void foreach(int n, Consumer<Integer> f) {
+    for (int i = 0; i < n; i++) {
+      f.apply(i);
     }
   }
 
@@ -924,7 +1003,10 @@ public class Utils {
      */
     public Class<B> componentType;
 
-    private FList() {
+    /**
+     * @private
+     */
+    protected FList() {
       this.preValues = new ArrayList();
       this.f = Utils.ID;
       this.componentType = (Class<B>) Object.class;
@@ -995,9 +1077,9 @@ public class Utils {
     @Override
     public String toString() {
       if (Character.class.equals(componentType))
-        return String.valueOf(toChars((ArrayList<Character>) postValues));
+        return String.valueOf(toChars((ArrayList<Character>) list()));
       else
-        return postValues.toString();
+        return list().toString();
     }
   }
 
