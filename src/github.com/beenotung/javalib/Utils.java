@@ -565,6 +565,10 @@ public class Utils {
       return stream().filter(a -> f.apply(a)).findAny();
     }
 
+    default Optional<A> anyNotNull() {
+      return findAny(a -> a != null);
+    }
+
     /**
      * @proteched
      */
