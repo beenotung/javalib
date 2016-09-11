@@ -11,7 +11,7 @@ import static github.com.beenotung.javalib.Utils.println;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
-    println("test LazyArrayList");
+    println("testing LazyArrayList");
     Utils.Functional.LazyArrayList<Integer> as = new Utils.Functional.LazyArrayList<Integer>();
     as.list.add(1);
     as.list.add(10);
@@ -19,7 +19,7 @@ public class Main {
     println("as: " + as);
     println("bs: " + bs);
     println();
-    println("test FArray");
+    println("testing FArray");
     FArray<Character> cs = FArray.fromString("this is a long text");
     println("size: " + cs.length);
     println("upper: " + Utils.Functional.toString(cs.map(c -> {
@@ -28,6 +28,7 @@ public class Main {
       else
         return Character.valueOf(c);
     }, Character.class)));
+    println();
   }
 
   public static void main_old(String[] args) throws Throwable {
