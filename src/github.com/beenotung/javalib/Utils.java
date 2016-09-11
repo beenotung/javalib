@@ -170,6 +170,11 @@ public class Utils {
       _1 = t1;
       _2 = t2;
     }
+
+    @Override
+    public String toString() {
+      return Arrays.asList(_1, _2).toString();
+    }
   }
 
   public interface Producer<A> {
