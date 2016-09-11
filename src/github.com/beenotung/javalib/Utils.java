@@ -175,6 +175,10 @@ public class Utils {
     public String toString() {
       return Arrays.asList(_1, _2).toString();
     }
+
+    public <T3> Tuple2<T1, T3> newVal(Func1<T2, T3> f) {
+      return new Tuple2<T1, T3>(_1, f.apply(_2));
+    }
   }
 
   public interface Producer<A> {
