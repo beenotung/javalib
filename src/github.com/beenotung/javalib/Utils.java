@@ -12,16 +12,39 @@ public class Utils {
   public static final Scanner in = new Scanner(System.in);
   public static final PrintStream out = System.out;
 
-  public static void print(Object msg) {
-    System.out.print(msg);
+  public static void print(Object... msgs) {
+    System.out.print(toString(msgs));
   }
+
+  public static String toString(Object... os) {
+    if (os.length == 1) {
+      if (os[0] != null && os[0].getClass().isArray())
+        return toString(os[0]);
+      else
+        return Objects.toString(os[0]);
+    } else {
+      String res = "(";
+      for (int i = 0; i < os.length; i++) {
+        if (i > 0)
+          res += ",";
+        res += toString(os[i]);
+      }
+      res += ")";
+      return res;
+    }
+  }
+
+//  public static void print(Object msg) {
+//    System.out.print(msg);
+//  }
 
   public static void println() {
     System.out.println();
   }
 
-  public static void println(Object msg) {
-    System.out.println(msg);
+  public static void println(Object... msgs) {
+    print(msgs);
+    println();
   }
 
   public static <A> A or(A a1, A a2) {

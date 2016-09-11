@@ -33,6 +33,8 @@ public class Main {
     println();
     println("test stream utils");
     println("avg:" + average(mkIntStream(1000).map(i -> i + 1)));
+    println();
+    println("testing","println");
   }
 
   public static void main_old(String[] args) throws Throwable {
