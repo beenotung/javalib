@@ -4,9 +4,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.function.*;
 import java.util.stream.*;
 
@@ -51,14 +49,12 @@ public class Utils {
     else return (A) Double.valueOf(a.doubleValue() + b.doubleValue());
   }
 
+  @Deprecated
   public static <A extends Number> double average(Stream<A> stream) {
-    DoubleAccumulator sum = new DoubleAccumulator(Utils::sum, 0d);
-    AtomicLong n = new AtomicLong(0);
-    stream.forEach(a -> {
-      n.incrementAndGet();
-      sum.accumulate(a.doubleValue());
-    });
-    return sum.get() / n.get();
+    return stream
+      .mapToDouble(a -> a.doubleValue())
+      .average()
+      .getAsDouble();
   }
 
   public static <A, B, C> Func1<A, C> compose(Func1<B, C> g, Func1<A, B> f) {
