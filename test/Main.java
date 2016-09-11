@@ -31,6 +31,8 @@ public class Main {
     println("groups: " + cs.group(4));
     println("even-groups: " + cs.evenGroup(4));
     println();
+    println("test stream utils");
+    println("avg:" + average(mkIntStream(1000).map(i -> i + 1)));
   }
 
   public static void main_old(String[] args) throws Throwable {
