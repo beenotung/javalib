@@ -49,12 +49,12 @@ public class Utils {
     else return (A) Double.valueOf(a.doubleValue() + b.doubleValue());
   }
 
-  @Deprecated
-  public static <A extends Number> double average(Stream<A> stream) {
-    return stream
-      .mapToDouble(a -> a.doubleValue())
-      .average()
-      .getAsDouble();
+  public static <A extends Number> Optional<Double> average(Stream<A> stream) {
+    return toOptional(
+      stream
+        .mapToDouble(a -> a.doubleValue())
+        .average()
+    );
   }
 
   public static <A, B, C> Func1<A, C> compose(Func1<B, C> g, Func1<A, B> f) {
@@ -1007,6 +1007,13 @@ public class Utils {
     A res[] = (A[]) Array.newInstance(aClass, buffer.size());
     res = buffer.toArray(res);
     return res;
+  }
+
+  public static Optional<Double> toOptional(OptionalDouble x) {
+    if (x.isPresent())
+      return Optional.of(x.getAsDouble());
+    else
+      return Optional.empty();
   }
 
   /* similar to id, but with cast sugar */
