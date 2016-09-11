@@ -3,6 +3,7 @@ package github.com.beenotung.javalib;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -50,336 +51,371 @@ public class Utils {
     else return (A) Double.valueOf(a.doubleValue() + b.doubleValue());
   }
 
-  public static class Functional {
-    public static <A, B, C> Func1<A, C> compose(Func1<B, C> g, Func1<A, B> f) {
-      return a -> g.apply(f.apply(a));
+  public static <A, B, C> Func1<A, C> compose(Func1<B, C> g, Func1<A, B> f) {
+    return a -> g.apply(f.apply(a));
+  }
+
+  public static <A> M<A> flat(M<M<A>> mma) {
+    return mma.value();
+  }
+
+  /* slow, unsafe */
+  public static <A extends Number> A sum(LazyArrayList<A> m) {
+    return m.stream().reduce(Utils::sum).get();
+  }
+
+  public static int sumInt(LazyArrayList<Integer> a) {
+    return a.stream().reduce((acc, c) -> acc + c).orElse(0);
+  }
+
+  public static long sumLong(LazyArrayList<Long> a) {
+    return a.stream().reduce((acc, c) -> acc + c).orElse(0l);
+  }
+
+  public static double sumDouble(LazyArrayList<Double> a) {
+    return a.stream().reduce((acc, c) -> acc + c).orElse(0d);
+  }
+
+  public static float sumFloat(LazyArrayList<Float> a) {
+    return a.stream().reduce((acc, c) -> acc + c).orElse(0f);
+  }
+
+  public static <A> A[] fill(int n, A a) {
+    A as[] = (A[]) Array.newInstance(a.getClass(), n);
+    for (int i = 0; i < n; i++) {
+      as[i] = a;
     }
+    return as;
+  }
 
-    public static <A> M<A> flat(M<M<A>> mma) {
-      return mma.value();
+  public static <A> A[] tabulate(int n, Function<Integer, A> f, Class<A> aClass) {
+    A as[] = (A[]) Array.newInstance(aClass, n);
+    for (int i = 0; i < n; i++) {
+      as[i] = f.apply(i);
     }
+    return as;
+  }
 
-    /* similar to to Function and BiFunction in jdk8, but in case need to run in jdk7 */
-    public interface Func1<A, B> {
-      B apply(A a);
-
-      default <C> Func1<A, C> map(Func1<B, C> f) {
-        return compose(f, this);
-      }
+  public static char[] toChars(Character[] as) {
+    char[] cs = new char[as.length];
+    for (int i = 0; i < as.length; i++) {
+      cs[i] = as[i];
     }
+    return cs;
+  }
 
-    public interface Func2<A1, A2, B> {
-      B apply(A1 a1, A2 a2);
+  public static Character[] toChars(char[] as) {
+    Character[] cs = new Character[as.length];
+    for (int i = 0; i < as.length; i++) {
+      cs[i] = Character.valueOf(as[i]);
     }
+    return cs;
+  }
 
-    public interface Func3<A1, A2, A3, B> {
-      B apply(A1 a1, A2 a2, A3 a3);
+  public static String toString(FArray<Character> as) {
+    return String.valueOf(toChars(as.as));
+  }
+
+  /* similar to to Function and BiFunction in jdk8, but in case need to run in jdk7 */
+  public interface Func1<A, B> {
+    B apply(A a);
+
+    default <C> Func1<A, C> map(Func1<B, C> f) {
+      return compose(f, this);
     }
+  }
 
-    public interface Tuple2<A, B> {
-      A _1();
+  public interface Func2<A1, A2, B> {
+    B apply(A1 a1, A2 a2);
+  }
 
-      B _2();
-    }
+  public interface Func3<A1, A2, A3, B> {
+    B apply(A1 a1, A2 a2, A3 a3);
+  }
 
-    public interface Tuple3<A, B, C> {
-      A _1();
+  public interface Tuple2<A, B> {
+    A _1();
 
-      B _2();
+    B _2();
+  }
 
-      C _3();
-    }
+  public interface Tuple3<A, B, C> {
+    A _1();
 
-    public interface Producer<A> {
-      A apply();
-    }
+    B _2();
 
-    public interface Consumer<A> {
-      void apply(A a);
-    }
+    C _3();
+  }
 
-    public interface ConcatMonad<A> {
-      ConcatMonad<A> concat(ConcatMonad<A> ma);
-    }
+  public interface Producer<A> {
+    A apply();
+  }
 
-    public interface M<A> {
+  public interface Consumer<A> {
+    void apply(A a);
+  }
 
-      /**
-       * @protected
-       */
-      A value();
+  public interface ConcatMonad<A> {
+    ConcatMonad<A> concat(ConcatMonad<A> ma);
+  }
 
-      /*
-      * @private
-      * */
-      void setValue(A a);
+  public interface M<A> {
 
-      default <B> M<B> unit(B b) {
-        try {
-          M ma = getClass().newInstance();
-          ma.setValue(b);
-          return ma;
-        } catch (InstantiationException | IllegalAccessException e) {
-          e.printStackTrace();
-          throw new Error(e);
-        }
-      }
-
-      default <B> M<B> bind(Func1<A, M<B>> f) {
-        return f.apply(value());
-      }
-
-      default <B> M<B> map(Func1<A, B> f) {
-        return bind(a -> unit(f.apply(a)));
-      }
-
-      default <B> B ap(Func1<A, B> f) {
-        return f.apply(value());
-      }
-    }
-
-    public static class Monad<A> implements M<A> {
-      private A value;
-
-      private Monad() {
-      }
-
-      /**
-       * @final
-       */
-      public Monad(A value) {
-        this.value = value;
-      }
-
-
-      @Override
-      public A value() {
-        return value;
-      }
-
-      @Override
-      public void setValue(A a) {
-        this.value = a;
-      }
-    }
-
-    public static class Maybe<A> extends Monad<A> {
-      /**
-       * @final
-       */
-      public Maybe(A value) {
-        super(value);
-      }
-
-      @Override
-      public <B> M<B> bind(Func1<A, M<B>> f) {
-        return value() == null
-          ? (M<B>) this
-          : super.bind(f);
-      }
-
-      Maybe<A> or(Maybe<A> ma) {
-        return value() == null
-          ? ma
-          : this;
-      }
-
-      Maybe<A> and(Maybe<A> ma) {
-        return value() == null
-          ? this
-          : ma.value() == null ? ma : this;
-      }
-    }
-
-    public static class LazyArrayList<A> /*implements M<Func1<Object, A>>*/ {
-      /**
-       * @write_only
-       */
-      public ArrayList list;
-      private Func1<Object, A> f = a -> (A) a;
-
-      public LazyArrayList() {
-        this.list = new ArrayList();
-      }
-
-      public LazyArrayList(ArrayList list) {
-        this.list = list;
-      }
-
-      public <B> LazyArrayList<B> map(Func1<A, B> f) {
-        LazyArrayList<B> res = new LazyArrayList<B>(list);
-        res.f = this.f.map(f);
-        return res;
-      }
-
-      public <B> B foldl(Func2<B, A, B> f, B init) {
-        AtomicReference<B> acc = new AtomicReference<B>(init);
-        stream().forEachOrdered(c -> acc.set(f.apply(acc.get(), c)));
-        return acc.get();
-      }
-
-      public Stream<A> stream() {
-        return this.list.stream().map(new Function<A, A>() {
-          @Override
-          public A apply(A a) {
-            return f.apply(a);
-          }
-        });
-      }
-
-      public ArrayList<A> build() {
-        ArrayList<A> res = new ArrayList<A>(list.size());
-        stream().forEachOrdered(a -> res.add(a));
-        return res;
-      }
-
-      /* compact the chained map */
-      public synchronized void update() {
-        list = build();
-        f = a -> (A) a;
-      }
-
-      @Override
-      public String toString() {
-        return build().toString();
-      }
-    }
-
-    /* slow, unsafe */
-    public static <A extends Number> A sum(LazyArrayList<A> m) {
-      return m.stream().reduce(Utils::sum).get();
-    }
-
-    public static int sumInt(LazyArrayList<Integer> a) {
-      return a.stream().reduce((acc, c) -> acc + c).orElse(0);
-    }
-
-    public static long sumLong(LazyArrayList<Long> a) {
-      return a.stream().reduce((acc, c) -> acc + c).orElse(0l);
-    }
-
-    public static double sumDouble(LazyArrayList<Double> a) {
-      return a.stream().reduce((acc, c) -> acc + c).orElse(0d);
-    }
-
-    public static float sumFloat(LazyArrayList<Float> a) {
-      return a.stream().reduce((acc, c) -> acc + c).orElse(0f);
-    }
+    /**
+     * @protected
+     */
+    A value();
 
     /*
-    * functional Array
-    *
-    * non-resizable
-    * use native array directly, should be faster than LazyArrayList?
+    * @private
     * */
-    public static class FArray<A> {
-      public final A[] as;
-      public final int length;
+    void setValue(A a);
 
-      FArray(A[] value) {
-        this.as = value;
-        this.length = value.length;
+    default <B> M<B> unit(B b) {
+      try {
+        M ma = getClass().newInstance();
+        ma.setValue(b);
+        return ma;
+      } catch (InstantiationException | IllegalAccessException e) {
+        e.printStackTrace();
+        throw new Error(e);
       }
+    }
 
-      public static FArray<Character> fromString(String s) {
-        return new FArray<Character>(toChars(s.toCharArray()));
-      }
+    default <B> M<B> bind(Func1<A, M<B>> f) {
+      return f.apply(value());
+    }
 
-      public <B> FArray<B> map(Function<A, B> f, Class<B> bClass) {
-        B bs[] = (B[]) Array.newInstance(bClass, as.length);
-        for (int i = 0; i < bs.length; i++) {
-          bs[i] = f.apply(as[i]);
+    default <B> M<B> map(Func1<A, B> f) {
+      return bind(a -> unit(f.apply(a)));
+    }
+
+    default <B> B ap(Func1<A, B> f) {
+      return f.apply(value());
+    }
+  }
+
+  public static class Monad<A> implements M<A> {
+    private A value;
+
+    private Monad() {
+    }
+
+    /**
+     * @final
+     */
+    public Monad(A value) {
+      this.value = value;
+    }
+
+
+    @Override
+    public A value() {
+      return value;
+    }
+
+    @Override
+    public void setValue(A a) {
+      this.value = a;
+    }
+  }
+
+  public static class Maybe<A> extends Monad<A> {
+    /**
+     * @final
+     */
+    public Maybe(A value) {
+      super(value);
+    }
+
+    @Override
+    public <B> M<B> bind(Func1<A, M<B>> f) {
+      return value() == null
+        ? (M<B>) this
+        : super.bind(f);
+    }
+
+    Maybe<A> or(Maybe<A> ma) {
+      return value() == null
+        ? ma
+        : this;
+    }
+
+    Maybe<A> and(Maybe<A> ma) {
+      return value() == null
+        ? this
+        : ma.value() == null ? ma : this;
+    }
+  }
+
+  public static class LazyArrayList<A> /*implements M<Func1<Object, A>>*/ {
+    /**
+     * @write_only
+     */
+    public ArrayList list;
+    private Func1<Object, A> f = a -> (A) a;
+
+    public LazyArrayList() {
+      this.list = new ArrayList();
+    }
+
+    public LazyArrayList(ArrayList list) {
+      this.list = list;
+    }
+
+    public LazyArrayList(A[] list) {
+      this.list = new ArrayList(Arrays.asList(list));
+    }
+
+    public static <A> LazyArrayList<A> fill(int n, A a) {
+      return new LazyArrayList<A>(Utils.fill(n, a));
+    }
+
+    public static <A> LazyArrayList<A> tabulate(int n, Function<Integer, A> f, Class<A> aClass) {
+      return new LazyArrayList<A>(Utils.tabulate(n, f, aClass));
+    }
+
+    public <B> LazyArrayList<B> map(Func1<A, B> f) {
+      LazyArrayList<B> res = new LazyArrayList<B>(list);
+      res.f = this.f.map(f);
+      return res;
+    }
+
+    public <B> B foldl(Func2<B, A, B> f, B init) {
+      AtomicReference<B> acc = new AtomicReference<B>(init);
+      stream().forEachOrdered(c -> acc.set(f.apply(acc.get(), c)));
+      return acc.get();
+    }
+
+    public Stream<A> stream() {
+      return this.list.stream().map(new Function<A, A>() {
+        @Override
+        public A apply(A a) {
+          return f.apply(a);
         }
-        return new FArray<B>((B[]) bs);
-      }
+      });
+    }
 
-      public FArray<A> filter(Function<A, Boolean> f) {
-        ArrayList<A> buffer = new ArrayList<A>(as.length);
-        for (A a : as) {
-          if (f.apply(a))
-            buffer.add(a);
-        }
-        A[] res;
-        if (buffer.size() == 0)
-          res = (A[]) new Object[0];
-        else
-          res = (A[]) Array.newInstance(buffer.get(0).getClass(), buffer.size());
-        res = buffer.toArray(res);
-        return new FArray<A>(res);
-      }
+    public ArrayList<A> build() {
+      ArrayList<A> res = new ArrayList<A>(list.size());
+      stream().forEachOrdered(a -> res.add(a));
+      return res;
+    }
 
-      public static FArray<Character> range(char offset, int count) {
-        Character[] res = new Character[count];
-        for (int i = 0; i < count; i++) {
-          res[i] = (char) (i + offset);
-        }
-        return new FArray<Character>(res);
-      }
+    /* compact the chained map */
+    public synchronized void update() {
+      list = build();
+      f = a -> (A) a;
+    }
 
-      public void forEach(Function<A, Void> f) {
-        for (A a : as) {
-          f.apply(a);
-        }
-      }
+    @Override
+    public String toString() {
+      return build().toString();
+    }
+  }
 
-      public <B> B foldl(BiFunction<B, A, B> f, B acc) {
-        for (A a : as) {
-          acc = f.apply(acc, a);
-        }
-        return acc;
-      }
+  /*
+  * functional Array
+  *
+  * non-resizable
+  * use native array directly, should be faster than LazyArrayList?
+  * */
+  public static class FArray<A> {
+    public final A[] as;
+    public final int length;
 
-      public A head() {
-        return as[0];
-      }
+    FArray(A[] value) {
+      this.as = value;
+      this.length = value.length;
+    }
 
-      public FArray<A> tail() {
-        Object[] res = new Object[as.length - 1];
-        for (int i = 1; i < as.length; i++) {
-          res[i] = as[i];
-        }
-        return new FArray<A>((A[]) res);
-      }
+    /* TODO support multiple dimension */
+    public static <A> FArray<A> fill(int n, A a) {
+      return new FArray<A>(Utils.fill(n, a));
+    }
 
-      public FArray<FArray<A>> group(int group_size, Class<A> classObject) {
+    public static <A> FArray<A> tabulate(int n, Function<Integer, A> f, Class<A> aClass) {
+      return new FArray<A>(Utils.tabulate(n, f, aClass));
+    }
+
+    public static FArray<Character> fromString(String s) {
+      return new FArray<Character>(toChars(s.toCharArray()));
+    }
+
+    public static FArray<Character> range(char offset, int count) {
+      Character[] res = new Character[count];
+      for (int i = 0; i < count; i++) {
+        res[i] = (char) (i + offset);
+      }
+      return new FArray<Character>(res);
+    }
+
+    public <B> FArray<B> map(Function<A, B> f, Class<B> bClass) {
+      B bs[] = (B[]) Array.newInstance(bClass, as.length);
+      for (int i = 0; i < bs.length; i++) {
+        bs[i] = f.apply(as[i]);
+      }
+      return new FArray<B>((B[]) bs);
+    }
+
+    public FArray<A> filter(Function<A, Boolean> f) {
+      ArrayList<A> buffer = new ArrayList<A>(as.length);
+      for (A a : as) {
+        if (f.apply(a))
+          buffer.add(a);
+      }
+      A[] res;
+      if (buffer.size() == 0)
+        res = (A[]) new Object[0];
+      else
+        res = (A[]) Array.newInstance(buffer.get(0).getClass(), buffer.size());
+      res = buffer.toArray(res);
+      return new FArray<A>(res);
+    }
+
+    public void forEach(Function<A, Void> f) {
+      for (A a : as) {
+        f.apply(a);
+      }
+    }
+
+    public <B> B foldl(BiFunction<B, A, B> f, B acc) {
+      for (A a : as) {
+        acc = f.apply(acc, a);
+      }
+      return acc;
+    }
+
+    public A head() {
+      return as[0];
+    }
+
+    public FArray<A> tail() {
+      Object[] res = new Object[as.length - 1];
+      for (int i = 1; i < as.length; i++) {
+        res[i] = as[i];
+      }
+      return new FArray<A>((A[]) res);
+    }
+
+    public FArray<FArray<A>> group(int group_size, Class<A> classObject) {
             /* total number of element */
-        final int n = as.length;
-        group_size = Math.min(group_size, as.length);
-        FArray<A>[] res = (FArray<A>[]) new FArray[(int) Math.round(Math.ceil(1.0 * n / group_size))];
-        A[] bs = (A[]) Array.newInstance(classObject, group_size);
-        int i_res = 0;
-        int i_b = 0;
-        for (int i = 0; i < as.length; i++) {
-          bs[i_b++] = as[i];
-          if (i_b == group_size) {
-            res[i_res++] = new FArray<A>(bs);
-            group_size = Math.min(group_size, n - group_size * i_res);
-            bs = (A[]) Array.newInstance(classObject, group_size);
-            i_b = 0;
-          }
+      final int n = as.length;
+      group_size = Math.min(group_size, as.length);
+      FArray<A>[] res = (FArray<A>[]) new FArray[(int) Math.round(Math.ceil(1.0 * n / group_size))];
+      A[] bs = (A[]) Array.newInstance(classObject, group_size);
+      int i_res = 0;
+      int i_b = 0;
+      for (int i = 0; i < as.length; i++) {
+        bs[i_b++] = as[i];
+        if (i_b == group_size) {
+          res[i_res++] = new FArray<A>(bs);
+          group_size = Math.min(group_size, n - group_size * i_res);
+          bs = (A[]) Array.newInstance(classObject, group_size);
+          i_b = 0;
         }
-        return new FArray(res);
       }
-    }
-
-    public static char[] toChars(Character[] as) {
-      char[] cs = new char[as.length];
-      for (int i = 0; i < as.length; i++) {
-        cs[i] = as[i];
-      }
-      return cs;
-    }
-
-    public static Character[] toChars(char[] as) {
-      Character[] cs = new Character[as.length];
-      for (int i = 0; i < as.length; i++) {
-        cs[i] = Character.valueOf(as[i]);
-      }
-      return cs;
-    }
-
-    public static String toString(FArray<Character> as) {
-      return String.valueOf(toChars(as.as));
+      return new FArray(res);
     }
   }
 }
