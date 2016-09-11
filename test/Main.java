@@ -3,11 +3,7 @@ import github.com.beenotung.javalib.Utils;
 import github.com.beenotung.javalib.Utils.Functional.FArray;
 
 import static github.com.beenotung.javalib.Functional.*;
-import static github.com.beenotung.javalib.Utils.Functional.compose;
-import static github.com.beenotung.javalib.Utils.Functional.toString;
-import static github.com.beenotung.javalib.Utils.in;
-import static github.com.beenotung.javalib.Utils.print;
-import static github.com.beenotung.javalib.Utils.println;
+import static github.com.beenotung.javalib.Utils.*;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
@@ -20,7 +16,7 @@ public class Main {
     println("bs: " + bs);
     println();
     println("testing FArray");
-    FArray<Character> cs = FArray.fromString("this is a long text");
+    FArray<Character> cs = FArray.fromString("this is a long text").filter(c -> c.charValue() != 'a');
     println("size: " + cs.length);
     println("upper: " + Utils.Functional.toString(cs.map(c -> {
       if (c >= 'a' && c <= 'z')

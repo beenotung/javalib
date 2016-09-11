@@ -294,12 +294,18 @@ public class Utils {
       }
 
       public FArray<A> filter(Function<A, Boolean> f) {
-        ArrayList<A> res = new ArrayList<A>(as.length);
+        ArrayList<A> buffer = new ArrayList<A>(as.length);
         for (A a : as) {
           if (f.apply(a))
-            res.add(a);
+            buffer.add(a);
         }
-        return new FArray<A>((A[]) res.toArray());
+        A[] res;
+        if (buffer.size() == 0)
+          res = (A[]) new Object[0];
+        else
+          res = (A[]) Array.newInstance(buffer.get(0).getClass(), buffer.size());
+        res = buffer.toArray(res);
+        return new FArray<A>(res);
       }
 
       public static FArray<Character> range(char offset, int count) {
@@ -367,7 +373,7 @@ public class Utils {
     public static Character[] toChars(char[] as) {
       Character[] cs = new Character[as.length];
       for (int i = 0; i < as.length; i++) {
-        cs[i] = as[i];
+        cs[i] = Character.valueOf(as[i]);
       }
       return cs;
     }
