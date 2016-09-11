@@ -68,7 +68,6 @@ public class Utils {
     return aClass.isInstance(a) && aClass.isInstance(b);
   }
 
-
   public static double diff(double a, double b) {
     return Math.abs(a - b);
   }
@@ -235,6 +234,216 @@ public class Utils {
     public <T3> Tuple2<T1, T3> newVal(Func1<T2, T3> f) {
       return new Tuple2<T1, T3>(_1, f.apply(_2));
     }
+  }
+
+  public static <A, B, C> Func1<A, Func1<B, C>> curry(Func1<Tuple2<A, B>, C> f) {
+    return a -> b -> f.apply(new Tuple2<A, B>(a, b));
+  }
+
+  public static <A, B, C> Func1<Tuple2<A, B>, C> uncurry(Func1<A, Func1<B, C>> f) {
+    return ab -> f.apply(ab._1).apply(ab._2);
+  }
+
+  public static <A, B, C> Func1<B, Func1<A, C>> flip(Func1<A, Func1<B, C>> f) {
+    return b -> a -> f.apply(a).apply(b);
+  }
+
+  public static <A> Func1<?, A> _const(A a) {
+    return b -> a;
+  }
+
+  public static <A> Func1<Func1<A, A>, Func1<A, A>> until(Func1<A, Boolean> f) {
+    return g -> h -> {
+      A t;
+      do {
+        t = g.apply(h);
+      } while (!f.apply(t));
+      return t;
+    };
+  }
+
+  public static <A, B> B seq(Func1<A, B> f) {
+    Lazy<B> l = (Lazy<B>) f;
+    return l.apply(null);
+  }
+
+  public static class Lazy<A> implements Func1<Object, A> {
+    private A a;
+    public final Producer<A> f;
+    private boolean done = false;
+
+    public Lazy(Producer<A> f) {
+      this.f = f;
+    }
+
+    @Override
+    public A apply(Object o) {
+      if (!done)
+        a = f.apply();
+      return a;
+    }
+  }
+
+  public static <A, B> Func1<A, B> map(Func1<A, B> f) {
+    return a -> f.apply(a);
+  }
+
+  public static <A> Func1<RichList<A>, RichList<A>> append(RichList<A> a) {
+    return b -> {
+      RichList<A> c = a.newInstance();
+      List<A> cs = c.list();
+      cs.addAll(a.list());
+      cs.addAll(b.list());
+      c.setUnderneath(cs, a.getComponentType());
+      return c;
+    };
+  }
+
+  public static <A> Func1<RichList<A>, RichList<A>> filter(Func1<A, Boolean> f) {
+    return a -> a.newInstance((RichList<A>) a.stream().filter(f::apply), a.getComponentType());
+  }
+
+  public static <A> Func1<RichList<A>, RichList<RichList<A>>> span(Func1<A, Boolean> f) {
+    return a -> {
+      ArrayList<A> b = new ArrayList<A>(a.length());
+      ArrayList<A> c = new ArrayList<A>(a.length());
+      final boolean[] met = {false};
+      a.stream().forEachOrdered(x -> {
+        if (met[0])
+          c.add(x);
+        else if
+          (f.apply(x)) b.add(x);
+        else {
+          met[0] = true;
+          c.add(x);
+        }
+      });
+      Class<RichList<A>> aClass = (Class<RichList<A>>) a.getClass();
+      RichList<A> as[] = (RichList[]) Array.newInstance(aClass, 2);
+      as[0] = a.newInstance(b, a.getComponentType());
+      as[1] = a.newInstance(c, a.getComponentType());
+      return a.newInstance(as, aClass);
+    };
+  }
+
+  public static boolean not(boolean b) {
+    return !b;
+  }
+
+  public static <A> A id(A a) {
+    return a;
+  }
+
+  public static <A> RichList<A> reverse(RichList<A> a) {
+    final int n = a.length();
+    ArrayList<A> bs = new ArrayList<A>(n);
+    List<A> as = a.list();
+    for (int i = n - 1; i >= 0; i--) {
+      bs.add(as.get(i));
+    }
+    return a.newInstance(bs);
+  }
+
+  public static <A> Func1<RichList<A>, RichList<RichList<A>>> _break(Func1<A, Boolean> f) {
+    return a -> reverse(span(f).apply(a));
+  }
+
+  public static Boolean and(RichList<Boolean> a) {
+    return a.stream().allMatch(Utils::id);
+  }
+
+  public static Boolean or(RichList<Boolean> a) {
+    return a.stream().anyMatch(Utils::id);
+  }
+
+  public static <A> Func1<RichList<A>, Boolean> any(Func1<A, Boolean> f) {
+    return a -> a.stream().anyMatch(f::apply);
+  }
+
+  public static <A> Func1<RichList<A>, Boolean> all(Func1<A, Boolean> f) {
+    return a -> a.stream().allMatch(f::apply);
+  }
+
+  public static <A> RichList<A> concat(RichList<RichList<A>> ass) {
+    ArrayList<A> as = ass.stream().sequential()
+      .flatMap(x -> x.stream())
+      .collect(Collectors.toCollection(ArrayList::new));
+    if (as.size() == 0)
+      return ass.newInstance(as, (Class<A>) ass.getComponentType());
+    else
+      return ass.newInstance(as, getComponentType(as));
+  }
+
+  public static <A, B> Func1<RichList<A>, RichList<B>> concatMap(Func1<A, RichList<B>> f) {
+    return a -> {
+      Stream<B> bs = a.stream().flatMap(x -> f.apply(x).stream());
+      ArrayList<B> b = collect(bs);
+      if (b.size() == 0)
+        return a.newInstance(b, (Class<B>) a.getComponentType());
+      else
+        return a.newInstance(b, getComponentType(b));
+    };
+  }
+
+  public static <A, B> Func1<RichList<B>, RichList<Tuple2<A, B>>> zip(RichList<A> as) {
+    Func1<A, Func1<B, Tuple2<A, B>>> f = a -> b -> new Tuple2<A, B>(a, b);
+    return b -> zipWith(f).apply(as).apply(b);
+  }
+
+  public static <A, B> Tuple2<RichList<A>, RichList<B>> unzip(RichList<Tuple2<A, B>> xs) {
+    final int n = xs.length();
+    ArrayList<A> as = new ArrayList<A>(n);
+    ArrayList<B> bs = new ArrayList<B>(n);
+    Tuple2<ArrayList<A>, ArrayList<B>> res = new Tuple2(new ArrayList<A>(n), new ArrayList<B>(n));
+    xs.stream().forEachOrdered(x -> {
+      as.add(x._1);
+      bs.add(x._2);
+    });
+    return new Tuple2(xs.newInstance(as, getComponentType(as, (Class<A>) xs.getComponentType())),
+      xs.newInstance(bs, getComponentType(bs, (Class<B>) xs.getComponentType()))
+    );
+  }
+
+  public static Func1<String, RichList<String>> split(String pattern) {
+    return s -> new FList<Object, String>(s.split(pattern), String.class);
+  }
+
+  public static Func1<RichList<String>, String> unsplit(String pattern) {
+    return s -> s.stream().sequential().reduce("", (acc, c) -> acc + pattern + c).substring(1);
+  }
+
+  public static RichList<String> lines(String s) {
+    return split("\n").apply(s);
+  }
+
+  public static RichList<String> words(String s) {
+    return split(" ").apply(s);
+  }
+
+  public static String unlines(RichList<String> ss) {
+    return unsplit("\n").apply(ss);
+  }
+
+  public static String unwords(RichList<String> ss) {
+    return unsplit(" ").apply(ss);
+  }
+
+  public static <A, B, C> Func1<RichList<A>, Func1<RichList<B>, RichList<C>>> zipWith(Func1<A, Func1<B, C>> f) {
+    return a -> b -> {
+      final int n = Math.min(a.length(), b.length());
+      ArrayList<C> cs = new ArrayList<>(n);
+      List<A> as = a.list();
+      List<B> bs = b.list();
+      for (int i = 0; i < n; i++) {
+        cs.add(f.apply(as.get(i)).apply(bs.get(i)));
+      }
+      Class<C> cClass = a.length() < b.length() ? (Class<C>) a.getComponentType() : (Class<C>) b.getComponentType();
+      return a.newInstance(cs, getComponentType(cs, cClass));
+    };
+  }
+
+  public static <A> ArrayList<A> collect(Stream<A> a) {
+    return a.collect(Collectors.toCollection(ArrayList::new));
   }
 
   public interface Producer<A> {
@@ -681,8 +890,34 @@ public class Utils {
       return Utils.richStream(stream(), getComponentType());
     }
 
+    default RichList<A> newInstance() {
+      return newInstance(getComponentType());
+    }
+
+    default RichList<A> newInstance(A a) {
+      return newInstance(a, getComponentType());
+    }
+
+    default <A> RichList<A> newInstance(A a, Class<A> aClass) {
+      A[] as = (A[]) Array.newInstance(aClass, 1);
+      as[0] = a;
+      return newInstance(as, aClass);
+    }
+
+    default <A> RichList<A> newInstance(Class<A> aClass) {
+      return newInstance((A[]) Array.newInstance(aClass, 0), aClass);
+    }
+
+    default RichList<A> newInstance(RichList<A> as) {
+      return newInstance(as, getComponentType());
+    }
+
     default <A> RichList<A> newInstance(RichList<A> as, Class<A> aClass) {
       return newInstance(as.list(), aClass);
+    }
+
+    default RichList<A> newInstance(Collection<A> as) {
+      return newInstance(as, getComponentType());
     }
 
     default <A> RichList<A> newInstance(Collection<A> as, Class<A> aClass) {
@@ -693,6 +928,15 @@ public class Utils {
       } catch (InstantiationException | IllegalAccessException e) {
         throw new Error("the subclass should have empty constructor");
       }
+    }
+
+    default RichList<A> newInstance(Stream<A> as) {
+      return newInstance(as, getComponentType());
+    }
+
+    default <A> RichList<A> newInstance(Stream<A> as, Class<A> aClass) {
+      ArrayList<A> bs = as.collect(Collectors.toCollection(ArrayList::new));
+      return newInstance(bs, aClass);
     }
 
     default <A> RichList<A> newInstance(A[] as, Class<A> aClass) {
@@ -1034,6 +1278,10 @@ public class Utils {
     }
   }
 
+  public static <A> Class<A> getComponentType(Collection<A> as, Class<A> ifEmpty) {
+    return as.stream().filter(a -> a != null).map(a -> (Class<A>) a.getClass()).findAny().orElseGet(() -> ifEmpty);
+  }
+
   /**
    * @deprecated slow
    */
@@ -1161,6 +1409,10 @@ public class Utils {
       this.done = true;
       this.postValues = new ArrayList<B>();
       this.componentType = (Class<B>) Object.class;
+    }
+
+    public FList(B[] postValues, Class<B> componentType) {
+      this((ArrayList<B>) Arrays.asList(postValues), componentType);
     }
 
     public FList(ArrayList<B> postValues, Class<B> componentType) {
