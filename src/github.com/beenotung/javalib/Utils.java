@@ -40,13 +40,41 @@ public class Utils {
     return aClass.isInstance(a) && aClass.isInstance(b);
   }
 
-  public static <A extends Number> A sum(A a, A b) {
-    if (instanceOf(Integer.class, a, b))
-      return (A) Integer.valueOf(a.intValue() + b.intValue());
-    else if (instanceOf(Float.class, a, b))
-      return (A) Float.valueOf(a.floatValue() + b.floatValue());
-      /* TODO detect more case */
-    else return (A) Double.valueOf(a.doubleValue() + b.doubleValue());
+
+  public static double diff(double a, double b) {
+    return Math.abs(a - b);
+  }
+
+  public static float diff(float a, float b) {
+    return Math.abs(a - b);
+  }
+
+  public static int diff(int a, int b) {
+    return Math.abs(a - b);
+  }
+
+  public static long diff(long a, long b) {
+    return Math.abs(a - b);
+  }
+
+  public static double sum(double a, double b) {
+    return a + b;
+  }
+
+  public static float sum(float a, float b) {
+    return a + b;
+  }
+
+  public static int sum(int a, int b) {
+    return a + b;
+  }
+
+  public static long sum(long a, long b) {
+    return a + b;
+  }
+
+  public static double mse(double a, double b) {
+    return Math.pow(a - b, 2);
   }
 
   public static <A extends Number> Optional<Double> average(Stream<A> stream) {
