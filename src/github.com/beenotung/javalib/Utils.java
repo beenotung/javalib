@@ -120,17 +120,17 @@ public class Utils {
   public static char[] toChars(ArrayList<Character> as) {
     char[] cs = new char[as.size()];
     for (int i = 0; i < cs.length; i++) {
-      cs[i] = as.get(i);
+      cs[i] = as.get(i).charValue();
     }
     return cs;
   }
 
-  public static Character[] toChars(char[] as) {
-    Character[] cs = new Character[as.length];
-    for (int i = 0; i < as.length; i++) {
-      cs[i] = Character.valueOf(as[i]);
+  public static ArrayList<Character> toChars(char[] cs) {
+    ArrayList<Character> res = new ArrayList<>(cs.length);
+    for (char a : cs) {
+      res.add(a);
     }
-    return cs;
+    return res;
   }
 
 //  public static String toString(FArray<Character> as) {
@@ -561,6 +561,10 @@ public class Utils {
       return list().size();
     }
 
+    default Optional<A> findAny(Func1<A, Boolean> f) {
+      return stream().filter(a -> f.apply(a)).findAny();
+    }
+
     /**
      * @proteched
      */
@@ -674,6 +678,7 @@ public class Utils {
     }
   }
 
+  @Deprecated
   public interface CommonList<A> {
     A get(int i);
 
@@ -693,35 +698,40 @@ public class Utils {
      */
     CommonList<A> newInstance();
 
-    CommonList<A> newInstance(A[] as);
+    default <A> CommonList<A> newInstance(A[] as) {
+      return newInstance(Arrays.asList(as));
+    }
 
     /**
      * @deprecated
      */
-    default CommonList<A> newInstance(Collection<A> as) {
+    default <A> CommonList<A> newInstance(Collection<A> as) {
       return newInstance(as, Utils.getComponentType(as));
     }
 
-    CommonList<A> newInstance(Collection<A> as, Class<A> aClass);
+    <A> CommonList<A> newInstance(Collection<A> as, Class<A> aClass);
 
-    CommonList<A> newInstance(CommonList<A> as);
+    default <A> CommonList<A> newInstance(CommonList<A> as) {
+      return newInstance(as, (Class<A>) getComponentType());
+    }
 
-    default CommonList<A> fill(int n, A a) {
+    <A> CommonList<A> newInstance(CommonList<A> as, Class<A> aClass);
+
+    default <A> CommonList<A> fill(int n, A a) {
       return newInstance(Utils.fill(n, a));
     }
 
-    default CommonList<A> tabulate(int n, Function<Integer, A> f) {
+    default <A> CommonList<A> tabulate(int n, Function<Integer, A> f) {
       return newInstance(Utils.tabulate(n, f));
     }
 
     default CommonList<A> filter(Func1<A, Boolean> f) {
-      stream().filter(a -> f.apply(a));
-      CommonList<A> os = filter(f, (Class<A>) Object.class);
-      A a = os.firstNonNull();
-      return a == null ? os : newInstance((A[]) castArray(os.toArray(), a.getClass()));
+      A[] as = mkIntStream(size())
+        .map(this::get)
+        .filter(a -> f.apply(a))
+        .toArray(Utils.genArrayFunc(getComponentType()));
+      return newInstance(as);
     }
-
-    CommonList<A> filter(Func1<A, Boolean> f, Class<A> aClass);
 
     /**
      * @deprecated slow
@@ -729,7 +739,7 @@ public class Utils {
     default <B> CommonList<B> map(Func1<A, B> f) {
       CommonList<B> os = map(f, (Class<B>) Object.class);
       B b = os.firstNonNull();
-      return b == null ? os : (CommonList<B>) newInstance((A[]) castArray(os.toArray(), b.getClass()));
+      return b == null ? os : newInstance(os, (Class<B>) b.getClass());
     }
 
     <B> CommonList<B> map(Func1<A, B> f, Class<B> bClass);
@@ -826,7 +836,7 @@ public class Utils {
 //     * @write_only
 //     */
 //    public ArrayList list;
-//    private Func1<Object, A> f = a -> (A) a;
+//    private Func1<Object, A> mapper = a -> (A) a;
 //
 //    public LazyArrayList() {
 //      this.list = new ArrayList();
@@ -844,19 +854,19 @@ public class Utils {
 //      return new LazyArrayList<A>(Utils.fill(n, a));
 //    }
 //
-//    public static <A> LazyArrayList<A> tabulate(int n, Function<Integer, A> f, Class<A> aClass) {
-//      return new LazyArrayList<A>(Utils.tabulate(n, f));
+//    public static <A> LazyArrayList<A> tabulate(int n, Function<Integer, A> mapper, Class<A> aClass) {
+//      return new LazyArrayList<A>(Utils.tabulate(n, mapper));
 //    }
 //
-//    public <B> LazyArrayList<B> map(Func1<A, B> f) {
+//    public <B> LazyArrayList<B> map(Func1<A, B> mapper) {
 //      LazyArrayList<B> res = new LazyArrayList<B>(list);
-//      res.f = this.f.map(f);
+//      res.mapper = this.mapper.map(mapper);
 //      return res;
 //    }
 //
-//    public <B> B foldl(Func2<B, A, B> f, B init) {
+//    public <B> B foldl(Func2<B, A, B> mapper, B init) {
 //      AtomicReference<B> acc = new AtomicReference<B>(init);
-//      stream().forEachOrdered(c -> acc.set(f.apply(acc.get(), c)));
+//      stream().forEachOrdered(c -> acc.set(mapper.apply(acc.get(), c)));
 //      return acc.get();
 //    }
 //
@@ -864,7 +874,7 @@ public class Utils {
 //      return this.list.stream().map(new Function<A, A>() {
 //        @Override
 //        public A apply(A a) {
-//          return f.apply(a);
+//          return mapper.apply(a);
 //        }
 //      });
 //    }
@@ -878,7 +888,7 @@ public class Utils {
 //    /* compact the chained map */
 //    public synchronized void update() {
 //      list = build();
-//      f = a -> (A) a;
+//      mapper = a -> (A) a;
 //    }
 //
 //    @Override
@@ -890,6 +900,15 @@ public class Utils {
 //        return Arrays.asList(as).toString();
 //    }
 //  }
+
+  public static <A> IntFunction<A[]> genArrayFunc(Class<A> aClass) {
+    return new IntFunction<A[]>() {
+      @Override
+      public A[] apply(int value) {
+        return (A[]) Array.newInstance(aClass, value);
+      }
+    };
+  }
 
   /**
    * @deprecated slow
@@ -979,11 +998,16 @@ public class Utils {
   }
 
   /* similar to id, but with cast sugar */
-  public static <A> A cast(Object a) {
-    return (A) a;
-  }
+//  public static <A> A cast(Object a) {
+//    return (A) a;
+//  }
 
-  public static final Func1 ID = Utils::cast;
+//  public static <A> boolean pass(A a) {
+//    return true;
+//  }
+
+//  public static final Func1 ID = Utils::cast;
+//  public static final Func1 TURE = x -> true;
 
   /*
   * functional ArrayList
@@ -997,7 +1021,12 @@ public class Utils {
     /**
      * @final
      */
-    protected final Func1<A, B> f;
+    protected final Func1<A, B> mapper;
+    /**
+     * @final
+     */
+    protected final Func1<A, Boolean> filter;
+
     /**
      * @final
      */
@@ -1007,21 +1036,27 @@ public class Utils {
      * @private
      */
     protected FList() {
-      this.preValues = new ArrayList();
-      this.f = Utils.ID;
+      this.preValues = new ArrayList<A>();
+      this.mapper = a -> (B) a;
+      filter = a -> true;
+      this.done = true;
+      this.postValues = new ArrayList<B>();
       this.componentType = (Class<B>) Object.class;
     }
 
-    /**
-     * @deprecated slow
-     */
-    public FList(Collection<? extends A> preValues, Class<A> aClass) {
-      this(new ArrayList<A>(preValues), Utils::cast, (Class<B>) aClass);
+    public FList(ArrayList<B> postValues, Class<B> componentType) {
+      this.preValues = (ArrayList<A>) postValues;
+      this.mapper = a -> (B) a;
+      this.filter = a -> true;
+      this.done = true;
+      this.postValues = postValues;
+      this.componentType = componentType;
     }
 
-    public FList(ArrayList<A> preValues, Func1<A, B> f, Class<B> componentType) {
+    public FList(ArrayList<A> preValues, Func1<A, B> mapper, Func1<A, Boolean> filter, Class<B> componentType) {
       this.preValues = preValues;
-      this.f = f;
+      this.mapper = mapper;
+      this.filter = filter;
       this.componentType = componentType;
     }
 
@@ -1032,11 +1067,13 @@ public class Utils {
 
     @Override
     public ArrayList<B> list() {
-      if (f == null)
+      if (mapper == null || filter == null)
         throw new Error("Illegal Status");
       if (done) return postValues;
-      postValues = new ArrayList<B>(preValues.size());
-      preValues.forEach(a -> postValues.add(f.apply(a)));
+      postValues = preValues.stream()
+        .filter(filter::apply)
+        .map(mapper::apply)
+        .collect(Collectors.toCollection(ArrayList::new));
       return postValues;
     }
 
@@ -1052,11 +1089,6 @@ public class Utils {
       componentType = bClass;
     }
 
-    @Override
-    public Stream<B> stream() {
-      return done ? postValues.stream() : preValues.stream().map(a -> f.apply(a));
-    }
-
     public void add(A a) {
       preValues.add(a);
     }
@@ -1066,12 +1098,21 @@ public class Utils {
     }
 
     public <C> FList<A, C> map(Func1<B, C> f, Class<C> cClass) {
-      if (done) return new FList<A, C>((ArrayList<A>) postValues, b -> f.apply((B) b), cClass);
-      else return new FList<A, C>(preValues, a -> f.apply(this.f.apply(a)), cClass);
+      if (done)
+        return new FList<A, C>((ArrayList<A>) postValues, a -> f.apply((B) a), a -> true, cClass);
+      else
+        return new FList<A, C>(preValues, a -> f.apply(mapper.apply(a)), filter, cClass);
     }
 
-    public static <A> FList<?, Character> fromString(String s) {
-      return new FList<>(Arrays.asList(toChars(s.toCharArray())), Character.class);
+    public FList<A, B> filter(Func1<A, Boolean> f) {
+      if (done)
+        return new FList<A, B>((ArrayList<A>) postValues, a -> (B) a, f, componentType);
+      else
+        return new FList<A, B>(preValues, a -> (B) a, a -> filter.apply(a) && f.apply(a), componentType);
+    }
+
+    public static FList<?, Character> fromString(String s) {
+      return new FList<>(toChars(s.toCharArray()), Character.class);
     }
 
     @Override
@@ -1216,42 +1257,42 @@ public class Utils {
 //    }
 //
 //    @Override
-//    public CommonList<A> filter(Func1<A, Boolean> f) {
-//      return new FArray<A>(Utils.filter(as, f));
+//    public CommonList<A> filter(Func1<A, Boolean> mapper) {
+//      return new FArray<A>(Utils.filter(as, mapper));
 //    }
 //
 //    @Override
-//    public CommonList<A> filter(Func1<A, Boolean> f, Class<A> aClass) {
-//      return new FArray<A>(Utils.filter(as, f, aClass));
+//    public CommonList<A> filter(Func1<A, Boolean> mapper, Class<A> aClass) {
+//      return new FArray<A>(Utils.filter(as, mapper, aClass));
 //    }
 //
 //    @Override
-//    public <B> CommonList<B> map(Func1<A, B> f) {
-//      return new FArray<B>(Utils.map(as, f));
+//    public <B> CommonList<B> map(Func1<A, B> mapper) {
+//      return new FArray<B>(Utils.map(as, mapper));
 //    }
 //
 //    @Override
-//    public <B> CommonList<B> map(Func1<A, B> f, Class<B> bClass) {
-//      return new FArray<B>(Utils.map(as, f, bClass));
+//    public <B> CommonList<B> map(Func1<A, B> mapper, Class<B> bClass) {
+//      return new FArray<B>(Utils.map(as, mapper, bClass));
 //    }
 //
 //    @Override
-//    public A reduce(Func2<A, A, A> f) {
+//    public A reduce(Func2<A, A, A> mapper) {
 //      A acc = as[0];
 //      for (int i = 1; i < as.length; i++) {
-//        acc = f.apply(acc, as[i]);
+//        acc = mapper.apply(acc, as[i]);
 //      }
 //      Arrays.asList(as).stream().reduce(new BinaryOperator<A>() {
 //        @Override
 //        public A apply(A a, A a2) {
-//          return f.apply(a, a2);
+//          return mapper.apply(a, a2);
 //        }
 //      });
 //      return acc;
 //    }
 //
 //    @Override
-//    public <B> B foldl(Func2<B, A, B> f, B init) {
+//    public <B> B foldl(Func2<B, A, B> mapper, B init) {
 //      return null;
 //    }
 //

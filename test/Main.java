@@ -1,5 +1,4 @@
 import github.com.beenotung.javalib.Functional;
-import github.com.beenotung.javalib.Utils;
 import github.com.beenotung.javalib.Utils.*;
 
 import static github.com.beenotung.javalib.Functional.*;
@@ -20,7 +19,8 @@ public class Main {
 //    println("testing FArray");
 //    FArray<Character> cs = FArray.fromString("this is a long text").filter(c -> c.charValue() != 'a');
     println("size: " + cs.length());
-    println("upper: "+cs.map(c->c.toUpperCase(c)).toString());
+    println("upper: " + cs.map(Character::toUpperCase).toString());
+    println("no e:" + cs.filter(c -> !c.equals('e')));
 //    println("upper: " + Utils.toString(cs.map(c -> {
 //      if (c >= 'a' && c <= 'z')
 //        return Character.valueOf((char) (c + ('A' - 'a')));

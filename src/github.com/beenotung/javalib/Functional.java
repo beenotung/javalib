@@ -161,7 +161,7 @@ public class Functional {
 
     IList<A> drop(Long n) throws Exception;
 
-    /* f: (acc,current)=>result */
+    /* mapper: (acc,current)=>result */
     A reduce(IFunc<Pair<A, A>, A> f) throws Exception;
 
     @Override
