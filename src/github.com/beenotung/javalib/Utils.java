@@ -697,6 +697,11 @@ public class Utils {
     return mkIntStream(0, n);
   }
 
+  public static <A> Stream<A> mkStream(int n, Func1<Integer, A> f) {
+    return mkIntStream(n)
+      .map(f::apply);
+  }
+
   public static Stream<Integer> mkIntStream(int offset, int count) {
     return new ArrayList<>(Arrays.asList(tabulate(count, i -> i + offset))).stream();
   }
