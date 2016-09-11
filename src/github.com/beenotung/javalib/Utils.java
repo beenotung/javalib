@@ -702,8 +702,17 @@ public class Utils {
   }
 
   public static <A> Stream<A> mkStream(int offset, int n, Func1<Integer, A> f) {
-    return mkIntStream(n)
+    return mkIntStream(offset, n)
       .map(i -> f.apply(offset + i));
+  }
+
+  public static <A> Stream<Tuple2<Integer, A>> mkIndexedStream(int n, Func1<Integer, A> f) {
+    return mkIndexedStream(0, n, f);
+  }
+
+  public static <A> Stream<Tuple2<Integer, A>> mkIndexedStream(int offset, int n, Func1<Integer, A> f) {
+    return mkIntStream(offset, n)
+      .map(i -> new Tuple2<Integer, A>(i, f.apply(offset + 1)));
   }
 
   public static Stream<Integer> mkIntStream(int offset, int count) {
