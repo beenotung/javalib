@@ -23,17 +23,11 @@ if [ "$res" == "0" ]; then
   git clone "$lib_url" "$lib_root";
   cat "$lib_file" | grep -v "package" | sed "s/public class $lib_class/class $lib_class/" > "$tmp/$lib_class"
   cp "$main_file" "$tmp/main"
-  code=$(cat "$tmp/$lib_class")
-#  sed -i "/public class/i \
-#$code
-#  " "$main_file"
   sed -i '/public class/i \
 _inject_lib_' "$main_file";
   sed -i "/_inject_lib_/r $tmp/$lib_class" "$main_file";
   sed -i '/_inject_lib_/d' "$main_file"
-#  echo "$code"
-#  sed -i "/public class/i $tmp/$lib_class" "$main_file"
-#  cat "$tmp/$lib_class" "$tmp/main" > "$main_file"
+  rm -rf "$tmp"
 else
   echo "$lib_class already exist, skip inject"
 fi
