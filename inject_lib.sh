@@ -24,7 +24,8 @@ if [ "$res" == "0" ]; then
   cat "$lib_file" | grep -v "package" | sed "s/public class $lib_class/class $lib_class/" > "$tmp/$lib_class"
   cp "$main_file" "$tmp/main"
   sed -i '/public class/i \
-_inject_lib_' "$main_file";
+_inject_lib_\
+' "$main_file";
   sed -i "/_inject_lib_/r $tmp/$lib_class" "$main_file";
   sed -i '/_inject_lib_/d' "$main_file"
   rm -rf "$tmp"
