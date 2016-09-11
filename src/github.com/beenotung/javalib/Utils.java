@@ -1,9 +1,11 @@
 package github.com.beenotung.javalib;
 
 import java.io.PrintStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -262,6 +264,112 @@ public class Utils {
 
     public static float sumFloat(LazyArrayList<Float> a) {
       return a.stream().reduce((acc, c) -> acc + c).orElse(0f);
+    }
+
+    /*
+    * functional Array
+    *
+    * non-resizable
+    * use native array directly, should be faster than LazyArrayList?
+    * */
+    public static class FArray<A> {
+      public final A[] as;
+      public final int length;
+
+      FArray(A[] value) {
+        this.as = value;
+        this.length = value.length;
+      }
+
+      public static FArray<Character> fromString(String s) {
+        Character cs[] = new Character[s.length()];
+        for (int i = 0; i < s.toCharArray().length; i++) {
+          cs[i] = s.charAt(i);
+        }
+        return new FArray<Character>(cs);
+      }
+
+      public <B> FArray<B> map(Function<A, B> f, Class<B> bClass) {
+        B bs[] = (B[]) Array.newInstance(bClass, as.length);
+        for (int i = 0; i < bs.length; i++) {
+          bs[i] = f.apply(as[i]);
+        }
+        return new FArray<B>((B[]) bs);
+      }
+
+      public FArray<A> filter(Function<A, Boolean> f) {
+        ArrayList<A> res = new ArrayList<A>(as.length);
+        for (A a : as) {
+          if (f.apply(a))
+            res.add(a);
+        }
+        return new FArray<A>((A[]) res.toArray());
+      }
+
+      public static FArray<Character> range(char offset, int count) {
+        Character[] res = new Character[count];
+        for (int i = 0; i < count; i++) {
+          res[i] = (char) (i + offset);
+        }
+        return new FArray<Character>(res);
+      }
+
+      public void forEach(Function<A, Void> f) {
+        for (A a : as) {
+          f.apply(a);
+        }
+      }
+
+      public <B> B foldl(BiFunction<B, A, B> f, B acc) {
+        for (A a : as) {
+          acc = f.apply(acc, a);
+        }
+        return acc;
+      }
+
+      public A head() {
+        return as[0];
+      }
+
+      public FArray<A> tail() {
+        Object[] res = new Object[as.length - 1];
+        for (int i = 1; i < as.length; i++) {
+          res[i] = as[i];
+        }
+        return new FArray<A>((A[]) res);
+      }
+
+      public FArray<FArray<A>> group(int group_size, Class<A> classObject) {
+            /* total number of element */
+        final int n = as.length;
+        group_size = Math.min(group_size, as.length);
+        FArray<A>[] res = (FArray<A>[]) new FArray[(int) Math.round(Math.ceil(1.0 * n / group_size))];
+        A[] bs = (A[]) Array.newInstance(classObject, group_size);
+        int i_res = 0;
+        int i_b = 0;
+        for (int i = 0; i < as.length; i++) {
+          bs[i_b++] = as[i];
+          if (i_b == group_size) {
+            res[i_res++] = new FArray<A>(bs);
+            group_size = Math.min(group_size, n - group_size * i_res);
+            bs = (A[]) Array.newInstance(classObject, group_size);
+            i_b = 0;
+          }
+        }
+        return new FArray(res);
+      }
+    }
+
+    public static char[] toChars(Character[] as) {
+      char[] cs = new char[as.length];
+      for (int i = 0; i < as.length; i++) {
+        cs[i] = as[i];
+      }
+      return cs;
+    }
+
+    public static String toString(FArray<Character> as) {
+      return String.valueOf(toChars(as.as));
     }
   }
 }

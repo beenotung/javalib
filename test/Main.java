@@ -1,20 +1,33 @@
 import github.com.beenotung.javalib.Functional;
 import github.com.beenotung.javalib.Utils;
+import github.com.beenotung.javalib.Utils.Functional.FArray;
 
 import static github.com.beenotung.javalib.Functional.*;
 import static github.com.beenotung.javalib.Utils.Functional.compose;
+import static github.com.beenotung.javalib.Utils.Functional.toString;
 import static github.com.beenotung.javalib.Utils.in;
 import static github.com.beenotung.javalib.Utils.print;
 import static github.com.beenotung.javalib.Utils.println;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
+    println("test LazyArrayList");
     Utils.Functional.LazyArrayList<Integer> as = new Utils.Functional.LazyArrayList<Integer>();
     as.list.add(1);
     as.list.add(10);
     Utils.Functional.LazyArrayList<Integer> bs = as.map(a -> a * 10);
-    println("as: "+as);
-    println("bs: "+bs);
+    println("as: " + as);
+    println("bs: " + bs);
+    println();
+    println("test FArray");
+    FArray<Character> cs = FArray.fromString("this is a long text");
+    println("size: " + cs.length);
+    println("upper: " + Utils.Functional.toString(cs.map(c -> {
+      if (c >= 'a' && c <= 'z')
+        return Character.valueOf((char) (c + ('A' - 'a')));
+      else
+        return Character.valueOf(c);
+    }, Character.class)));
   }
 
   public static void main_old(String[] args) throws Throwable {
