@@ -698,8 +698,12 @@ public class Utils {
   }
 
   public static <A> Stream<A> mkStream(int n, Func1<Integer, A> f) {
+    return mkStream(0, n, f);
+  }
+
+  public static <A> Stream<A> mkStream(int offset, int n, Func1<Integer, A> f) {
     return mkIntStream(n)
-      .map(f::apply);
+      .map(i -> f.apply(offset + i));
   }
 
   public static Stream<Integer> mkIntStream(int offset, int count) {
