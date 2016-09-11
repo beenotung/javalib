@@ -34,6 +34,11 @@ public class Utils {
     }
   }
 
+  public static String repeat(int n, String s) {
+    if (n == 0) return "";
+    return mkIntStream(n).map(i -> s).reduce(String::concat).get();
+  }
+
 //  public static void print(Object msg) {
 //    System.out.print(msg);
 //  }
