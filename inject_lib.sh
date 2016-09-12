@@ -86,6 +86,7 @@ sed -i "s/^}/\/* lib code end *\//" "$tmp/code";
 sed -i "s/$lib_class/$main_class/g" "$tmp/code";
 ### crop leading/tailing blank lines
 sed -i '1 d' "$tmp/code";
+sed -i '1 d' "$tmp/code";
 ### copy code into main file
 sed -i "/public class $main_class/r $tmp/code" "$main_file";
 
