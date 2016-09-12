@@ -39,10 +39,6 @@ public class Utils {
     return mkIntStream(n).map(i -> s).reduce(String::concat).get();
   }
 
-//  public static void print(Object msg) {
-//    System.out.print(msg);
-//  }
-
   public static void println() {
     System.out.println();
   }
@@ -64,8 +60,16 @@ public class Utils {
       : a1;
   }
 
-  public static boolean instanceOf(Class aClass, Object a, Object b) {
-    return aClass.isInstance(a) && aClass.isInstance(b);
+  public static <A> ArrayList<A> list(A[] as) {
+    return new ArrayList<A>(Arrays.asList(as));
+  }
+
+  public static <A> Stream<A> stream(A[] as) {
+    return list(as).stream();
+  }
+
+  public static boolean instanceOf(Class aClass, Object... os) {
+    return stream(os).allMatch(o -> aClass.isInstance(os));
   }
 
   public static double diff(double a, double b) {
@@ -138,50 +142,60 @@ public class Utils {
     return mma.value();
   }
 
-  /* slow, unsafe */
-//  public static <A extends Number> A sum(LazyArrayList<A> m) {
-//    return m.stream().reduce(Utils::sum).get();
-//  }
+  public static <A> Optional<Class<A>> optionalClass(A a) {
+    return Optional.ofNullable(a).map(x -> (Class<A>) x.getClass());
+  }
 
-//  public static int sumInt(LazyArrayList<Integer> a) {
-//    return a.stream().reduce((acc, c) -> acc + c).orElse(0);
-//  }
-
-//  public static long sumLong(LazyArrayList<Long> a) {
-//    return a.stream().reduce((acc, c) -> acc + c).orElse(0l);
-//  }
-
-//  public static double sumDouble(LazyArrayList<Double> a) {
-//    return a.stream().reduce((acc, c) -> acc + c).orElse(0d);
-//  }
-
-//  public static float sumFloat(LazyArrayList<Float> a) {
-//    return a.stream().reduce((acc, c) -> acc + c).orElse(0f);
-//  }
+  /* casted operation , avoid casting in application code */
+  public static <A> Class<A> _class(A a) {
+    return (Class<A>) a.getClass();
+  }
 
   public static <A> A[] fill(int n, A a) {
-    A as[] = (A[]) Array.newInstance(a.getClass(), n);
+    A as[] = empty(n, _class(a));
     for (int i = 0; i < n; i++) {
       as[i] = a;
     }
     return as;
   }
 
-  /**
-   * @deprecated slow
-   */
-  public static <A> A[] tabulate(int n, Function<Integer, A> f) {
-    Object[] os = tabulate(n, f, (Class<A>) Object.class);
-    A a = firstNonNull((A[]) os);
-    return a == null ? (A[]) os : castArray(os, (Class<A>) a.getClass());
+  public static <A> Optional<A> firstNonNull(ArrayList<A> as) {
+    for (A a : as) {
+      if (a != null)
+        return Optional.of(a);
+    }
+    return Optional.empty();
   }
 
-  public static <A> A[] tabulate(int n, Function<Integer, A> f, Class<A> aClass) {
-    A as[] = (A[]) Array.newInstance(aClass, n);
+  public static <A> Optional<A> firstNonNull(A[] as) {
+    for (A a : as) {
+      if (a != null)
+        return Optional.of(a);
+    }
+    return Optional.empty();
+  }
+
+  public static <A> A[] array(ArrayList<A> list, Class<A> aClass) {
+    A[] as = empty(list.size(), aClass);
+    as = list.toArray(as);
+    return as;
+  }
+
+  public static <A> A[] tabulate(int n, Func1<Integer, A> f, Class<A> aClass) {
+    A[] as = empty(n, aClass);
     for (int i = 0; i < n; i++) {
       as[i] = f.apply(i);
     }
     return as;
+  }
+
+  @Deprecated /* slow */
+  public static <A> A[] tabulate(int n, Func1<Integer, A> f) {
+    ArrayList<A> as = new ArrayList<A>(n);
+    for (int i = 0; i < n; i++) {
+      as.add(f.apply(i));
+    }
+    return array(as, _class(firstNonNull(as).get()));
   }
 
   public static <A> A[] empty(int n, Class<A> aClass) {
@@ -189,12 +203,10 @@ public class Utils {
   }
 
   public static <A> A[][] empty(int n, Func1<Integer, Integer> f, Class<A> aClass) {
-    int avg_length = mkIntStream(n)
-      .map(i -> f.apply(i))
-      .reduce(Utils::sum)
-      .get() / n;
-    A[][] ass = (A[][]) Array.newInstance(aClass, n, avg_length);
-    foreach(n, i -> ass[i] = (A[]) Array.newInstance(aClass, f.apply(i)));
+    A[][] ass = (A[][]) Array.newInstance(aClass, n, 0);
+    for (int i = 0; i < n; i++) {
+      ass[i] = empty(f.apply(i), aClass);
+    }
     return ass;
   }
 
@@ -213,10 +225,6 @@ public class Utils {
     }
     return res;
   }
-
-//  public static String toString(FArray<Character> as) {
-//    return String.valueOf(toChars(as.as));
-//  }
 
   /* similar to to Function and BiFunction in jdk8, but in case need to run in jdk7 */
   public interface Func1<A, B> {
@@ -351,6 +359,8 @@ public class Utils {
   public static <A> A id(A a) {
     return a;
   }
+
+  /* TODO clean up up to here */
 
   public static <A> RichList<A> reverse(RichList<A> a) {
     final int n = a.length();
@@ -584,6 +594,14 @@ public class Utils {
       return value() == null
         ? this
         : ma.value() == null ? ma : this;
+    }
+
+    public A get() {
+      return Objects.requireNonNull(value());
+    }
+
+    public A getOrElse(A defaultValue) {
+      return Utils.and(value(), defaultValue);
     }
   }
 
@@ -1380,14 +1398,6 @@ public class Utils {
     map(as, f, (B[]) os);
     B b = firstNonNull((B[]) os);
     return b == null ? (B[]) os : castArray(os, (Class<B>) b.getClass());
-  }
-
-  public static <A> A firstNonNull(A as[]) {
-    for (A a : as) {
-      if (a != null)
-        return a;
-    }
-    return null;
   }
 
   public static <A, B> B[] map(A as[], Func1<A, B> f, Class<B> bClass) {
