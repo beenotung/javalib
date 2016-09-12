@@ -16,22 +16,74 @@ public class Utils {
     System.out.print(toString(msgs));
   }
 
-  public static String toString(Object... os) {
-    if (os.length == 1) {
-      if (os[0] != null && os[0].getClass().isArray())
-        return toString(os[0]);
-      else
-        return Objects.toString(os[0]);
-    } else {
-      String res = "(";
-      for (int i = 0; i < os.length; i++) {
-        if (i > 0)
-          res += ",";
-        res += toString(os[i]);
-      }
-      res += ")";
-      return res;
+  public static String arrayToString(Object[] os) {
+    String res = "(";
+    for (int i = 0; i < os.length; i++) {
+      if (i > 0)
+        res += ",";
+      res += toString(os[i]);
     }
+    res += ")";
+    return res;
+  }
+
+  public static class ArrayStringBuffer {
+    private String buffer;
+    boolean first = true;
+
+    public void add(Object o) {
+      if (first) {
+        first = false;
+        buffer = String.valueOf(o);
+      } else {
+        buffer += "," + String.valueOf(o);
+      }
+    }
+
+    public String build() {
+      return "(" + buffer + ")";
+    }
+  }
+
+  public static <A> String toString(A o) {
+    if (o != null && o.getClass().isArray()) {
+      Class<?> c = o.getClass().getComponentType();
+      if (c.isPrimitive()) {
+        ArrayStringBuffer buffer = new ArrayStringBuffer();
+        switch (c.getTypeName()) {
+          case "int":
+            for (int i : ((int[]) o)) {
+              buffer.add(i);
+            }
+            break;
+          case "double":
+            for (double v : ((double[]) o)) {
+              buffer.add(v);
+            }
+            break;
+          case "float":
+            for (float v : ((float[]) o)) {
+              buffer.add(v);
+            }
+            break;
+          case "byte":
+            for (byte b : ((byte[]) o)) {
+              buffer.add(b);
+            }
+            break;
+          default:
+            throw new Error("unsupported type");
+        }
+        return buffer.build();
+      } else return arrayToString((Object[]) o);
+    } else return String.valueOf(o);
+  }
+
+  public static String toString(Object... os) {
+    if (os.length == 1)
+      return toString(os[0]);
+    else
+      return arrayToString(os);
   }
 
   public static String repeat(int n, String s) {
@@ -1166,7 +1218,7 @@ public class Utils {
       return newInstance(Utils.fill(n, a));
     }
 
-    default <A> CommonList<A> tabulate(int n, Function<Integer, A> f) {
+    default <A> CommonList<A> tabulate(int n, Func1<Integer, A> f) {
       return newInstance(Utils.tabulate(n, f));
     }
 
@@ -1375,7 +1427,7 @@ public class Utils {
    * @deprecated slow
    */
   public static <A> A[] castArray(Object[] os) {
-    A a = firstNonNull((A[]) os);
+    A a = firstNonNull((A[]) os).get();
     return a == null ? (A[]) os : castArray(os, (Class<A>) a.getClass());
   }
 
@@ -1396,7 +1448,7 @@ public class Utils {
     final int n = as.length;
     Object os[] = (Object[]) Array.newInstance(Object.class, n);
     map(as, f, (B[]) os);
-    B b = firstNonNull((B[]) os);
+    B b = firstNonNull((B[]) os).get();
     return b == null ? (B[]) os : castArray(os, (Class<B>) b.getClass());
   }
 

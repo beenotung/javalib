@@ -1,11 +1,28 @@
 import github.com.beenotung.javalib.Functional;
 import github.com.beenotung.javalib.Utils.*;
 
+import java.lang.reflect.Array;
+
 import static github.com.beenotung.javalib.Functional.*;
+import static github.com.beenotung.javalib.Functional.list;
 import static github.com.beenotung.javalib.Utils.*;
 
 public class Main {
   public static void main(String[] args) throws Throwable {
+    Object[] as = (Object[]) Array.newInstance(Object.class, 1);
+    as[0] = 'a';
+    println("as", as);
+    println("as.class", as.getClass());
+    println("as.class.comtype", as.getClass().getComponentType());
+    println("a", as[0]);
+    println("a.class", as[0].getClass());
+    int[] is = new int[1];
+    println("is", is);
+    println("is.class", is.getClass());
+    println("is.class.comtype", is.getClass().getComponentType());
+  }
+
+  public static void main_new(String[] args) throws Throwable {
 //    println("testing LazyArrayList");
 //    Utils.LazyArrayList<Integer> as = Utils.LazyArrayList.tabulate(10, i -> i, Integer.class);
 //    as.list.add(10);
@@ -34,7 +51,7 @@ public class Main {
     println("test stream utils");
     println("avg:" + average(mkIntStream(1000).map(i -> i + 1)));
     println();
-    println("testing","println");
+    println("testing", "println");
   }
 
   public static void main_old(String[] args) throws Throwable {
