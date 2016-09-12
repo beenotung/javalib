@@ -1020,6 +1020,59 @@ public class Utils {
     }
   }
 
+  public static <A> List<A> list(Stream<A> stream) {
+    ArrayList<A> res = new ArrayList<A>();
+    stream.forEachOrdered(a -> res.add(a));
+    return res;
+  }
+
+  public static <A> RichList<A> richList(List<A> list,Class<A>aClass) {
+    return new FL(new ArrayList(list),aClass);
+  }
+
+  public static <A> RichList<A> richList(Stream<A> stream,Class<A>aClass) {
+    ArrayList<A> as = new ArrayList<A>();
+    stream.forEachOrdered(a->as.add(a));
+    return richList(as,aClass);
+  }
+
+  /* temp name, will replace FList after finish composing */
+  public static class FL<A> implements RichList<A> {
+    private final ArrayList<A> values;
+    private Class<A> componentType = (Class<A>) Object.class;
+
+    protected FL() {
+      this.values = new ArrayList<A>();
+    }
+
+    public FL(ArrayList<A> values, Class<A> componentType) {
+      this.values = values;
+      this.componentType = componentType;
+    }
+
+    @Override
+    public Class<A> getComponentType() {
+      return componentType;
+    }
+
+    @Override
+    public List<A> list() {
+      return values;
+    }
+
+    @Override
+    public void setUnderneath(A[] as, Class<A> aClass) {
+      this.setUnderneath(Arrays.asList(as), aClass);
+    }
+
+    @Override
+    public void setUnderneath(Collection<A> collection, Class<A> aClass) {
+      values.clear();
+      values.addAll(collection);
+      componentType = aClass;
+    }
+  }
+
   public static Stream<Integer> mkIntStream(int n) {
     return mkIntStream(0, n);
   }
@@ -1382,21 +1435,10 @@ public class Utils {
       return Optional.empty();
   }
 
-  /* similar to id, but with cast sugar */
-//  public static <A> A cast(Object a) {
-//    return (A) a;
-//  }
-
-//  public static <A> boolean pass(A a) {
-//    return true;
-//  }
-
-//  public static final Func1 ID = Utils::cast;
-//  public static final Func1 TURE = x -> true;
-
   /*
   * functional ArrayList
   * */
+  @Deprecated
   public static class FList<A, B> implements RichList<B> {
     protected final ArrayList<A> preValues;
 
