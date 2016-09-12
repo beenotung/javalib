@@ -1026,14 +1026,14 @@ public class Utils {
     return res;
   }
 
-  public static <A> RichList<A> richList(List<A> list,Class<A>aClass) {
-    return new FL(new ArrayList(list),aClass);
+  public static <A> RichList<A> richList(List<A> list, Class<A> aClass) {
+    return new FL(new ArrayList(list), aClass);
   }
 
-  public static <A> RichList<A> richList(Stream<A> stream,Class<A>aClass) {
+  public static <A> RichList<A> richList(Stream<A> stream, Class<A> aClass) {
     ArrayList<A> as = new ArrayList<A>();
-    stream.forEachOrdered(a->as.add(a));
-    return richList(as,aClass);
+    stream.forEachOrdered(a -> as.add(a));
+    return richList(as, aClass);
   }
 
   /* temp name, will replace FList after finish composing */
@@ -1472,7 +1472,7 @@ public class Utils {
     }
 
     public FList(B[] postValues, Class<B> componentType) {
-      this((ArrayList<B>) Arrays.asList(postValues), componentType);
+      this(new ArrayList<B>(Arrays.asList(postValues)), componentType);
     }
 
     public FList(ArrayList<B> postValues, Class<B> componentType) {
@@ -1621,116 +1621,4 @@ public class Utils {
     });
     return new IO<>(promise);
   }
-//
-//  /*
-//  * functional Array
-//  *
-//  * non-resizable
-//  * use native array directly, should be faster than LazyArrayList?
-//  * */
-//  public static class FArray<A> {
-//    final A[] as;
-//
-//    private FArray() {
-//      as = (A[]) new Object[0];
-//    }
-//
-//    public FArray(A[] as) {
-//      this.as = as;
-//    }
-//
-//
-//    @Override
-//    public A get(int i) {
-//      return as[i];
-//    }
-//
-//    @Override
-//    public void set(int i, A a) {
-//      as[i] = a;
-//    }
-//
-//    @Override
-//    public int size() {
-//      return as.length;
-//    }
-//
-//    @Override
-//    public A[] toArray() {
-//      return as;
-//    }
-//
-//    @Override
-//    public Collection<A> toCollection() {
-//      return null;
-//    }
-//
-//    @Override
-//    public CommonList<A> newInstance() {
-//      return new FArray<A>();
-//    }
-//
-//    @Override
-//    public CommonList<A> newInstance(A[] as) {
-//      return new FArray<A>(as);
-//    }
-//
-//    @Override
-//    public CommonList<A> newInstance(Collection<A> as, Class<A> aClass) {
-//      A res[] = (A[]) Array.newInstance(aClass, as.size());
-//      res = as.toArray(res);
-//      return new FArray<A>(res);
-//    }
-//
-//    @Override
-//    public CommonList<A> newInstance(CommonList<A> as) {
-//      return new FArray<A>(((FArray<A>) as).as);
-//    }
-//
-//    @Override
-//    public CommonList<A> filter(Func1<A, Boolean> mapper) {
-//      return new FArray<A>(Utils.filter(as, mapper));
-//    }
-//
-//    @Override
-//    public CommonList<A> filter(Func1<A, Boolean> mapper, Class<A> aClass) {
-//      return new FArray<A>(Utils.filter(as, mapper, aClass));
-//    }
-//
-//    @Override
-//    public <B> CommonList<B> map(Func1<A, B> mapper) {
-//      return new FArray<B>(Utils.map(as, mapper));
-//    }
-//
-//    @Override
-//    public <B> CommonList<B> map(Func1<A, B> mapper, Class<B> bClass) {
-//      return new FArray<B>(Utils.map(as, mapper, bClass));
-//    }
-//
-//    @Override
-//    public A reduce(Func2<A, A, A> mapper) {
-//      A acc = as[0];
-//      for (int i = 1; i < as.length; i++) {
-//        acc = mapper.apply(acc, as[i]);
-//      }
-//      Arrays.asList(as).stream().reduce(new BinaryOperator<A>() {
-//        @Override
-//        public A apply(A a, A a2) {
-//          return mapper.apply(a, a2);
-//        }
-//      });
-//      return acc;
-//    }
-//
-//    @Override
-//    public <B> B foldl(Func2<B, A, B> mapper, B init) {
-//      return null;
-//    }
-//
-//    @Override
-//    public A firstNonNull() {
-//      return null;
-//    }
-//  }
-
 }
