@@ -3,7 +3,9 @@ lib in pure java
 
 similar to [jslib](https://github.com/beenotung/jslib), [myutils](https://github.com/beenotung/myutils)
 but this repo contains only java code
-minimal dependency on external library, even the standard library (so that hopefully less painful when need to work on jdk7)
+minimal dependency on external library
+require jdk8 to work, please ...
+(not only the functionality in Stream, but the lambda expression is almost a must...)
 
 ## Requirement
  - linux
@@ -29,3 +31,14 @@ This library is very compact, (for quick reimplement during competition when e-r
 
 ## Long Term Goal
 Maybe it's more worth to work with Scala (https://github.com/beenotung/myutils)
+
+## Style
+1. Avoid writing method
+e.g. ```list.update(f)```
+better write in ```update(list,f)```
+This can be syntactically painful when using the functions, but this way can work on the most type of data (It is not like Javascript, cannot 'polyfill' an existing Class (cannot modify the standary library))
+2. Write monadic method
+To be easy to do chained operation (e.g. map)
+But only when the class is purely not depending on it's parent
+3. As abstract as possible in the parameter
+e.g. take Collection instead of List if possible
