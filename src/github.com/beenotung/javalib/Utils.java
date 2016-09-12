@@ -104,6 +104,24 @@ public class Utils {
     return Math.pow(a - b, 2);
   }
 
+  public static double square_error(double a, double b) {
+    return Math.pow(a - b, 2);
+  }
+
+  public static RichList<Double> toList(double as[]) {
+    Double[] xs = tabulate(as.length, i -> as[i], Double.class);
+    return new FList<Object, Double>(xs, Double.class);
+  }
+
+  public static double mean_square_error(double as[], double bs[]) {
+    RichList<Double> ass = toList(as);
+    RichList<Double> bss = toList(bs);
+    Func1<Double, Func1<Double, Double>> f = a -> b -> square_error(a, b);
+    return zipWith(f).apply(ass).apply(bss).stream()
+      .mapToDouble(Utils::id)
+      .average().orElseGet(() -> 0);
+  }
+
   public static <A extends Number> Optional<Double> average(Stream<A> stream) {
     return toOptional(
       stream
