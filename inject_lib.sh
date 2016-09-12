@@ -48,13 +48,12 @@ if [ -d "$lib_root" ]; then
 fi
 mkdir -p "$lib_root";
 ## download lib
-#git clone "$lib_url" "$lib_root"; ## tmp disable
+git clone "$lib_url" "$lib_root";
 mkdir -p "$tmp";
 cp "$lib_file" "$tmp/l";
 
 ## insert marker to indicate lib existence
-sed -i "1 i /*$key*/" "$main_file"; ## tmp disable
-#sed -i "1 i /*something*/" "$main_file"; ## tmp enable
+sed -i "1 i /*$key*/" "$main_file"; 
 
 ## inject lib dependent
 echo "/* lib dep begin */" > "$tmp/dep";
@@ -89,6 +88,8 @@ sed -i "s/$lib_class/$main_class/g" "$tmp/code";
 sed -i '1 d' "$tmp/code";
 ### copy code into main file
 sed -i "/public class $main_class/r $tmp/code" "$main_file";
+
+rm -rf "$tmp";
 
 exit 0;
 
