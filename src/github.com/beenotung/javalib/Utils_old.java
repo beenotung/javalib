@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 //
 public class Utils_old {
@@ -30,33 +29,6 @@ public class Utils_old {
 
     public <B> IO<B> chain(Func1<A, B> f) {
       return new IO<B>(promise.then(f));
-    }
-  }
-
-  public static class Promise<A> {
-    private ArrayList<Consumer<A>> pendings = new ArrayList<>();
-    private ArrayList<Consumer> failed = new ArrayList<>(); //TODO
-
-    public <B> Promise<B> then(Func1<A, B> f) {
-      Promise<B> next = new Promise<B>();
-      pendings.add(a -> next.resolve(f.apply(a)));
-      return next;
-    }
-
-    public void then(Consumer<A> f) {
-      pendings.add(f::apply);
-    }
-
-    public void otherwise(Consumer f) {
-      failed.add(f::apply);
-    }
-
-    public void resolve(A a) {
-      pendings.forEach(c -> c.apply(a));
-    }
-
-    public void reject(Object error) {
-      failed.forEach(c -> c.apply(error));
     }
   }
 

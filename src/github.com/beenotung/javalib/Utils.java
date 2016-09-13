@@ -5,6 +5,7 @@ import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -49,7 +50,7 @@ public class Utils {
     }
   }
 
-  public static String ObjectToString(Object o) {
+  public static String objectToString(Object o) {
     if (o != null && o.getClass().isArray()) {
       Class<?> c = o.getClass().getComponentType();
       ArrayStringBuffer buffer = new ArrayStringBuffer();
@@ -91,9 +92,9 @@ public class Utils {
 
   public static String toString(Object... os) {
     if (os.length == 1)
-      return ObjectToString(os[0]);
+      return objectToString(os[0]);
     else
-      return ObjectToString(os);
+      return objectToString(os);
   }
 
   public static final Random random = new Random();
@@ -342,6 +343,69 @@ public class Utils {
     public ArrayList list() {
       return Utils.list(array());
     }
+  }
+
+  public static class Either<A, B> extends Pair<A, B> {
+    public final boolean isLeft;
+    public final boolean isRight;
+
+    public Either(A _1, B _2) {
+      super(_1, _2);
+      isLeft = _1 != null;
+      isRight = !isLeft;
+    }
+
+    public Either(boolean isLeft, Pair<A, B> pair) {
+      super(pair._1, pair._2);
+      this.isLeft = isLeft;
+      isRight = !isLeft;
+    }
+
+    public Either(A _1, B _2, boolean isLeft) {
+      super(_1, _2);
+      this.isLeft = isLeft;
+      this.isRight = !isLeft;
+    }
+
+    public A left() {
+      if (isLeft)
+        return _1;
+      else
+        throw new ErrorObject(_2);
+    }
+
+    public B right() {
+      if (isRight)
+        return _2;
+      else
+        throw new ErrorObject(_1);
+    }
+
+    public void apply(Consumer<A> leftF, Consumer<B> rightF) {
+      if (isLeft)
+        leftF.accept(_1);
+      else
+        rightF.accept(_2);
+    }
+
+    public <C, D> Either<C, D> map(Function<A, C> leftF, Function<B, D> rightF) {
+      if (isLeft)
+        return Utils.left(leftF.apply(_1));
+      else
+        return Utils.right(rightF.apply(_2));
+    }
+
+    public <C, D> Either<C, D> map(Function<Either<A, B>, Either<C, D>> f) {
+      return f.apply(this);
+    }
+  }
+
+  public static <A, B> Either<A, B> left(A value) {
+    return new Either<A, B>(value, null, true);
+  }
+
+  public static <A, B> Either<A, B> right(B value) {
+    return new Either<A, B>(null, value, true);
   }
 
   /* for type cast */
@@ -688,23 +752,16 @@ public class Utils {
      */
     A value();
 
-    /**
-     * @return itself
-     * @private
-     */
-    Monad<A> _setValue(A a);
-
-    default <T> Monad<T> newInstance() {
-      try {
-        return getClass().newInstance();
-      } catch (InstantiationException | IllegalAccessException e) {
-        e.printStackTrace();
-        throw new Error(getClass().getName() + " has not implement default constructor or it's private");
-      }
-    }
-
     default <T> Monad<T> unit(T a) {
-      return (Monad<T>) newInstance()._setValue(a);
+      try {
+        if (a == null)
+          return getClass().getDeclaredConstructor(Object.class).newInstance(a);
+        else
+          return getClass().getDeclaredConstructor(a.getClass()).newInstance(a);
+      } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        e.printStackTrace();
+        throw new Error("Failed to create monad instance of " + getClass().getName() + "! Consider override this method");
+      }
     }
 
     default <B> Monad<B> bind(Function<A, Monad<B>> f) {
@@ -722,8 +779,10 @@ public class Utils {
     default void apply(Consumer<A> f) {
       f.accept(value());
     }
+  }
 
-    Monad<A> concat(Monad<A> another);
+  public interface ConcatableMonad<A> extends Monad<A> {
+    ConcatableMonad<A> concat(ConcatableMonad<A> another);
   }
 
   public static <A> Monad<A> flat(Monad<Monad> mma) {
@@ -737,10 +796,136 @@ public class Utils {
     }
   }
 
+  public static class ErrorObject extends Error {
+    public final Object value;
+
+    public ErrorObject(Object value) {
+      super();
+      this.value = value;
+    }
+
+    public ErrorObject(String message, Object value) {
+      super(message);
+      this.value = value;
+    }
+
+    public ErrorObject(String message, Throwable cause, Object value) {
+      super(message, cause);
+      this.value = value;
+    }
+
+    public ErrorObject(Throwable cause, Object value) {
+      super(cause);
+      this.value = value;
+    }
+
+    protected ErrorObject(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, Object value) {
+      super(message, cause, enableSuppression, writableStackTrace);
+      this.value = value;
+    }
+  }
+
+  public static class Promise<A, E> implements ConcatableMonad<A> {
+    private boolean done = false;
+    private boolean fail = false;
+    private A result;
+    private E error;
+
+    @Override
+    public A value() {
+      return either().left();
+    }
+
+    public <B> Promise<B, E> then(Function<A, B> f) {
+      return defer(() -> {
+        try {
+          return left(f.apply(value()));
+        } catch (ErrorObject e) {
+          return right((E) e.value);
+        }
+      }).promise;
+    }
+
+    @Override
+    public Promise<A, E> concat(ConcatableMonad<A> another) {
+      Promise<A, E> _this = this;
+      if (instanceOf(Promise.class, another)) {
+        return defer(() -> _this.either().map(x -> ((Promise<A, E>) another).either())).promise;
+      } else throw new Error("another is not instanceof Promise");
+    }
+
+    public Either<A, E> either() {
+      while (!done) {
+        try {
+          this.wait();
+        } catch (InterruptedException e) {
+          if (!done) {
+            e.printStackTrace();
+            throw new Error(e);
+          }
+        }
+      }
+      if (fail)
+        return right(error);
+      else
+        return left(result);
+    }
+  }
+
+  public static class Defer<A, E> implements ConcatableMonad<Promise<A, E>> {
+    public final Promise<A, E> promise;
+
+    public Defer(Promise<A, E> promise) {
+      this.promise = promise;
+    }
+
+    @Override
+    public Promise<A, E> value() {
+      return this.promise;
+    }
+
+    public void resolve(A a) {
+      promise.result = a;
+      promise.done = true;
+      promise.notifyAll();
+    }
+
+    public void reject(E e) {
+      promise.error = e;
+      promise.fail = true;
+      promise.done = true;
+      promise.notifyAll();
+    }
+
+    @Override
+    public Defer<A, E> concat(ConcatableMonad<Promise<A, E>> another) {
+      if (instanceOf(Defer.class, another)) {
+        return new Defer(promise.concat(((Defer<A, E>) another).promise));
+      } else throw new Error("another is not instanceof Defer");
+    }
+  }
+
+  public static Thread fork(Runnable f) {
+    Thread res = new Thread(f);
+    res.start();
+    return res;
+  }
+
+  public static <A, E> Defer<A, E> defer(Supplier<Either<A, E>> f) {
+    Defer<A, E> res = new Defer<A, E>(new Promise<A, E>());
+    fork(() -> f.get().apply(res::resolve, res::reject));
+    return res;
+  }
+
   static final WeakHashMap<Object, AtomicReference> LazyCache = new WeakHashMap();
 
   public interface Lazy<A> extends Supplier<A>, Monad<A> {
     A calc();
+
+    @Override
+    default A value() {
+      return get();
+    }
 
     @Override
     public default A get() {
