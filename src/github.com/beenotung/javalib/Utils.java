@@ -1,7 +1,5 @@
 package github.com.beenotung.javalib;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError;
-
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
@@ -130,6 +128,12 @@ public class Utils {
   public static <A> ArrayList<A> list(Iterable<A> as) {
     ArrayList<A> res = new ArrayList<A>();
     as.forEach(res::add);
+    return res;
+  }
+
+  public static <A> ArrayList<A> list(Iterator<A> as) {
+    ArrayList<A> res = new ArrayList<A>();
+    as.forEachRemaining(res::add);
     return res;
   }
 
@@ -400,6 +404,14 @@ public class Utils {
     }
   }
 
+  public static <A> Either<A, String> _try(Supplier<A> f) {
+    try {
+      return left(f.get());
+    } catch (Throwable e) {
+      return right(e.toString());
+    }
+  }
+
   public static <A, B> Either<A, B> left(A value) {
     return new Either<A, B>(value, null, true);
   }
@@ -492,7 +504,7 @@ public class Utils {
     if (Lazy.class.isInstance(f))
       return ((Lazy<B>) f).get();
     else
-      throw new Error(new TypeCheckError("f is not instance of Lazy", f));
+      throw new Error("f is not instance of Lazy (" + f.getClass().getName() + ")");
   }
 
   public static Function<String, ArrayList<String>> split(String pattern) {
@@ -790,10 +802,35 @@ public class Utils {
     return mma.value();
   }
 
+  /* the supplier will do side effect (block and wait function) */
   public interface IO<A> extends Monad<Supplier<A>> {
     default void _do() {
       value().get();
     }
+
+    default Promise<A, String> promise() {
+      return defer(() -> _try(() -> value().get())).promise;
+    }
+  }
+
+  public static <A> IO<A> io(Supplier<A> f) {
+    return new IO() {
+      @Override
+      public Object value() {
+        return f.get();
+      }
+    };
+  }
+
+  /**
+   * do all io stuff, will not skip even if any goes wrong
+   */
+  public static <A> IO<ArrayList<Either<A, String>>> join(Collection<IO<A>> ios) {
+    return io(() ->
+      list(ios.stream().sequential()
+        .map(io -> io.promise())
+        .map(promise -> promise.either()))
+    );
   }
 
   public static class ErrorObject extends Error {
