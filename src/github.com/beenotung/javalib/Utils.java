@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Utils {
@@ -83,6 +84,8 @@ public class Utils {
         }
       }
       return buffer.build();
+    } else if (instanceOf(Stream.class, o)) {
+      return objectToString(list(((Stream) o)));
     } else {
       return String.valueOf(o);
     }
@@ -154,8 +157,13 @@ public class Utils {
     return indexedStream(Arrays.asList(as));
   }
 
-  public static boolean instanceOf(Class aClass, Object... os) {
-    return stream(os).allMatch(o -> aClass.isInstance(os));
+  /**
+   * at least one object to compare
+   */
+  public static boolean instanceOf(Class aClass, Object o, Object... others) {
+    ArrayList<Object> os = list(others);
+    os.add(o);
+    return os.stream().map(x -> x != null).allMatch(x -> x.getClass().equals(aClass));
   }
 
   public static double diff(double a, double b) {
@@ -195,18 +203,18 @@ public class Utils {
   }
 
   public static String repeat(int n, String s) {
-    return mkStream(n).map(x -> s).reduce(String::concat).orElseGet(() -> "");
+    return mkStream(n).mapToObj(x -> s).reduce(String::concat).orElseGet(() -> "");
   }
 
-  public static Stream<Integer> mkStream(int offset, int n) {
+  public static IntStream mkStream(int offset, int n) {
     Integer[] xs = new Integer[n];
     for (int i = 0; i < xs.length; i++) {
       xs[i] = i + offset;
     }
-    return stream(xs);
+    return stream(xs).mapToInt(Utils::id);
   }
 
-  public static Stream<Integer> mkStream(int n) {
+  public static IntStream mkStream(int n) {
     return mkStream(0, n);
   }
 
@@ -304,12 +312,16 @@ public class Utils {
     return chars(cs, cs.size());
   }
 
-  public static ArrayList<Character> chars(char[] cs) {
+  public static ArrayList<Character> list(char[] cs) {
     ArrayList<Character> res = new ArrayList<>(cs.length);
     for (char a : cs) {
       res.add(a);
     }
     return res;
+  }
+
+  public static ArrayList<Character> list(String s) {
+    return list(s.toCharArray());
   }
 
   public static <A> ArrayList<A> list(Stream<A> a) {
@@ -624,7 +636,7 @@ public class Utils {
     return ass;
   }
 
-  public static <A> ArrayList<ArrayList<A>> group(Iterable<A> as, int group_size, Class<A> aClass) {
+  public static <A> ArrayList<ArrayList<A>> group(Iterable<A> as, int group_size) {
     if (group_size < 0)
       throw new Error(new IllegalArgumentException("group_size should be positive"));
     else if (group_size == 1)
@@ -642,7 +654,7 @@ public class Utils {
     return res;
   }
 
-  public static <A> ArrayList<ArrayList<A>> evenGroup(Iterable<A> as, int n_group, Class<A> aClass) {
+  public static <A> ArrayList<ArrayList<A>> evenGroup(Iterable<A> as, int n_group) {
     if (n_group < 0)
       throw new Error(new IllegalArgumentException("n_group should be positive"));
     if (n_group == 0)
