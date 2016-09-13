@@ -148,6 +148,14 @@ public class Utils {
     return list(as).stream();
   }
 
+  public static Stream<Character> stream(String s) {
+    return list(s.toCharArray()).stream();
+  }
+
+  public static String string(Stream<Character> cs) {
+    return String.valueOf(chars(cs.iterator()));
+  }
+
   public static <A> Stream<Pair<Integer, A>> indexedStream(Collection<A> as) {
     final int[] idx = {0};
     return as.stream().sequential().map(a -> pair(idx[0]++, a));
@@ -306,6 +314,14 @@ public class Utils {
       res[i++] = c;
     }
     return res;
+  }
+
+  public static char[] chars(Iterator<Character> cs) {
+    return chars(list(cs));
+  }
+
+  public static char[] chars(Stream<Character> cs) {
+    return chars(cs.iterator());
   }
 
   public static char[] chars(Collection<Character> cs) {
