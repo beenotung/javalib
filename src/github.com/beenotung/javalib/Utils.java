@@ -349,8 +349,8 @@ public class Utils {
   }
 
   public static class Pair<A, B> {
-    A _1;
-    B _2;
+    public final A _1;
+    public final B _2;
 
     public Pair(A _1, B _2) {
       this._1 = _1;
@@ -359,7 +359,7 @@ public class Utils {
 
     @Override
     public String toString() {
-      return Utils.toString(_1, _2);
+      return Utils.toString(array());
     }
 
     public <C> Pair<A, C> new2(C _2) {
@@ -390,15 +390,21 @@ public class Utils {
     }
   }
 
-  public static class Pair3<T1, T2, T3> {
-    public final T1 _1;
-    public final T2 _2;
+  public static class Pair3<T1, T2, T3> extends Pair<T1, T2> {
     public final T3 _3;
 
     public Pair3(T1 t1, T2 t2, T3 t3) {
-      _1 = t1;
-      _2 = t2;
+      super(t1, t2);
       _3 = t3;
+    }
+
+    @Override
+    public Object[] array() {
+      Object[] xs = empty(3);
+      xs[0] = _1;
+      xs[1] = _2;
+      xs[2] = _3;
+      return xs;
     }
 
     /**
