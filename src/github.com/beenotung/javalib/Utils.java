@@ -1,15 +1,18 @@
 package github.com.beenotung.javalib;
 
-import jdk.internal.util.xml.impl.Pair;
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError;
 
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
-import java.util.stream.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Utils {
   public static final InputStream in = System.in;
@@ -93,6 +96,12 @@ public class Utils {
       return ObjectToString(os);
   }
 
+  public static final Random random = new Random();
+
+  public static int random(int offset, int range) {
+    return offset + random.nextInt(range + 1);
+  }
+
   public static <A> A or(A a1, A a2) {
     return a1 == null
       ? a2
@@ -105,8 +114,26 @@ public class Utils {
       : a1;
   }
 
+  public static boolean not(boolean b) {
+    return !b;
+  }
+
+  public static <A> A id(A a) {
+    return a;
+  }
+
   public static <A> ArrayList<A> list(A[] as) {
     return new ArrayList<A>(Arrays.asList(as));
+  }
+
+  public static <A> ArrayList<A> list(Iterable<A> as) {
+    ArrayList<A> res = new ArrayList<A>();
+    as.forEach(res::add);
+    return res;
+  }
+
+  public static <A> ArrayList<ArrayList<A>> wrap(ArrayList<A> as) {
+    return list(Arrays.asList(as));
   }
 
   public static <A> Stream<A> stream(A[] as) {
@@ -191,8 +218,26 @@ public class Utils {
     return (A[]) Array.newInstance(aClass, n);
   }
 
+  public static <A> A[][] empty(int n1, int n2, Class<A> aClass) {
+    return (A[][]) Array.newInstance(aClass, n1, n2);
+  }
+
+  public static <A> A[][] empty(int n, Function<Integer, Integer> f, Class<A> aClass) {
+    A[][] res = empty(n, 0, aClass);
+    reset(res, i -> (A[]) Array.newInstance(aClass, f.apply(i)));
+    return res;
+  }
+
   public static Object[] empty(int n) {
     return (Object[]) Array.newInstance(Object.class, n);
+  }
+
+  public static <A> A[] fill(int n, Supplier<A> f, Class<A> aClass) {
+    A[] as = empty(n, aClass);
+    for (int i = 0; i < n; i++) {
+      as[i] = f.get();
+    }
+    return as;
   }
 
   public static <A> A[] fill(int n, A a) {
@@ -219,6 +264,10 @@ public class Utils {
     A[] as = empty(list.size(), aClass);
     as = list.toArray(as);
     return as;
+  }
+
+  public static <A> A[] array(Stream<A> stream, Class<A> aClass) {
+    return array(list(stream), aClass);
   }
 
   public static <A> Optional<A> firstNonNull(Iterable<A> as) {
@@ -251,28 +300,11 @@ public class Utils {
   }
 
   public static ArrayList<Character> toChars(char[] cs) {
-    FList<Character> res = new FList<>(cs.length);
+    ArrayList<Character> res = new ArrayList<>(cs.length);
     for (char a : cs) {
       res.add(a);
     }
     return res;
-  }
-
-  public static class Lazy<A> implements Supplier<A> {
-    private A a;
-    public final Supplier<A> f;
-    private boolean done = false;
-
-    public Lazy(Supplier<A> f) {
-      this.f = f;
-    }
-
-    @Override
-    public A get() {
-      if (!done)
-        a = f.get();
-      return a;
-    }
   }
 
   public static <A> ArrayList<A> list(Stream<A> a) {
@@ -299,11 +331,33 @@ public class Utils {
     public <C> Pair<A, C> map2(BiFunction<A, B, C> f) {
       return new2(f.apply(_1, _2));
     }
+
+    public Object[] array() {
+      Object[] xs = empty(2);
+      xs[0] = _1;
+      xs[1] = _2;
+      return xs;
+    }
+
+    public ArrayList list() {
+      return Utils.list(array());
+    }
+  }
+
+  /* for type cast */
+  public <A> ArrayList<A> list(Pair<A, A> p) {
+    return p.list();
   }
 
   /* help cast type */
   public static <A, B> Pair<A, B> pair(A a, B b) {
     return new Pair<A, B>(a, b);
+  }
+
+  public static <A> void update(A[] list, Function<A, A> f) {
+    for (int i = 0; i < list.length; i++) {
+      list[i] = f.apply(list[i]);
+    }
   }
 
   public static <L extends List<A>, A> void update(L list, Function<A, A> f) {
@@ -312,9 +366,21 @@ public class Utils {
     }
   }
 
+  public static <A> void reset(A[] list, Function<Integer, A> f) {
+    for (int i = 0; i < list.length; i++) {
+      list[i] = f.apply(i);
+    }
+  }
+
   public static <L extends List<A>, A> void reset(L list, Function<Integer, A> f) {
     for (int i = 0; i < list.size(); i++) {
       list.set(i, f.apply(i));
+    }
+  }
+
+  public static <A> void replace(A[] list, BiFunction<Integer, A, A> f) {
+    for (int i = 0; i < list.length; i++) {
+      list[i] = f.apply(i, list[i]);
     }
   }
 
@@ -330,5 +396,365 @@ public class Utils {
 
   public static <A> Optional<Class<A>> getComponentType(A[] as) {
     return getComponentType(Arrays.asList(as));
+  }
+
+  public static <A, B, C> Function<A, Function<B, C>> curry(Function<Pair<A, B>, C> f) {
+    return a -> b -> f.apply(new Pair<A, B>(a, b));
+  }
+
+  public static <A, B, C> Function<Pair<A, B>, C> uncurry(Function<A, Function<B, C>> f) {
+    return ab -> f.apply(ab._1).apply(ab._2);
+  }
+
+  public static <A, B, C> Function<B, Function<A, C>> flip(Function<A, Function<B, C>> f) {
+    return b -> a -> f.apply(a).apply(b);
+  }
+
+  public static <A> Function<?, A> _const(A a) {
+    return b -> a;
+  }
+
+  public static <A> Function<Function<A, A>, Function<A, A>> until(Function<A, Boolean> f) {
+    return g -> h -> {
+      A t;
+      do {
+        t = g.apply(h);
+      } while (!f.apply(t));
+      return t;
+    };
+  }
+
+  public static <A, B> B seq(Function<A, B> f) {
+    if (Lazy.class.isInstance(f))
+      return ((Lazy<B>) f).get();
+    else
+      throw new Error(new TypeCheckError("f is not instance of Lazy", f));
+  }
+
+  public static Function<String, ArrayList<String>> split(String pattern) {
+    return s -> new ArrayList<String>(list(s.split(pattern)));
+  }
+
+  public static Function<ArrayList<String>, String> unsplit(String pattern) {
+    return s -> s.stream().sequential().reduce("", (acc, c) -> acc + pattern + c).substring(1);
+  }
+
+  public static ArrayList<String> lines(String s) {
+    return split("\n").apply(s);
+  }
+
+  public static ArrayList<String> words(String s) {
+    return split(" ").apply(s);
+  }
+
+  public static String unlines(ArrayList<String> ss) {
+    return unsplit("\n").apply(ss);
+  }
+
+  public static String unwords(ArrayList<String> ss) {
+    return unsplit(" ").apply(ss);
+  }
+
+  public static <A, B, C> Function<List<A>, Function<List<B>, ArrayList<C>>> zipWith(Function<A, Function<B, C>> f) {
+    return as -> bs -> {
+      final int n = Math.min(as.size(), bs.size());
+      ArrayList<C> cs = new ArrayList<C>(n);
+      for (int i = 0; i < n; i++) {
+        cs.add(f.apply(as.get(i)).apply(bs.get(i)));
+      }
+      return cs;
+    };
+  }
+
+  public static <A> Stream<Pair<Integer, A>> zipWithIndex(Stream<A> stream) {
+    final int[] i = {0};
+    return stream.sequential().map(s -> pair(i[0]++, s));
+  }
+
+  public static <A, B> Function<List<B>, ArrayList<Pair<A, B>>> zip(List<A> as) {
+    Function<A, Function<B, Pair<A, B>>> f = a -> b -> new Pair<A, B>(a, b);
+    return b -> zipWith(f).apply(as).apply(b);
+  }
+
+  public static <A, B> Pair<ArrayList<A>, ArrayList<B>> unzip(List<Pair<A, B>> xs) {
+    final int n = xs.size();
+    ArrayList<A> as = new ArrayList<A>(n);
+    ArrayList<B> bs = new ArrayList<B>(n);
+    Pair<ArrayList<A>, ArrayList<B>> res = new Pair(new ArrayList<A>(n), new ArrayList<B>(n));
+    xs.stream().forEachOrdered(x -> {
+      as.add(x._1);
+      bs.add(x._2);
+    });
+    return pair(as, bs);
+  }
+
+  /**
+   * @param n : bin size, if the bin size is unknown, use @group instead
+   * @param f : tell the element to be routed to left or right
+   * @return : binned List of Data
+   * @remark different from @span, this is not longest match, this go through every element
+   */
+  public static <A> ArrayList<ArrayList<A>> group(Iterable<A> xs, int n, Function<A, Integer> f) {
+    ArrayList<A>[] res = tabulate(n, i -> new ArrayList<A>(n), ArrayList.class);
+    xs.forEach(x -> res[f.apply(x)].add(x));
+    return list(res);
+  }
+
+  public static <K, V> HashMap<K, ArrayList<V>> group(Iterable<V> xs, Function<V, K> f) {
+    HashMap<K, ArrayList<V>> res = new HashMap<K, ArrayList<V>>();
+    xs.forEach(x -> {
+      K k = f.apply(x);
+      res.putIfAbsent(k, new ArrayList<V>());
+      res.get(k).add(x);
+    });
+    return res;
+  }
+
+  public static <A> Iterable<A> iterable(Stream<A> stream) {
+    return new Iterable<A>() {
+      @Override
+      public Iterator<A> iterator() {
+        return stream.iterator();
+      }
+    };
+  }
+
+  public static <A> A[][] group(A[] as, int group_size, Class<A> aClass) {
+    if (group_size < 0)
+      throw new Error(new IllegalArgumentException("group_size should be positive"));
+    /* total number of element */
+    int n = as.length;
+    if (n == 0 || group_size == 0) {
+      return empty(0, 0, aClass);
+    } else if (n == 1) {
+      A[][] res = empty(1, 0, aClass);
+      res[0] = as;
+      return res;
+    }
+    int n_group = (int) Math.round(Math.ceil(1.0 * n / group_size));
+    int size = n / n_group;
+    final Integer sizes[] = fill(n_group, size);
+    foreach(n - size * n_group, i -> sizes[i]++);
+    A[][] ass = empty(n_group, i -> sizes[i], aClass);
+    int offset = 0;
+    for (int i = 0; i < n_group; i++) {
+      System.arraycopy(
+        as, offset,
+        ass[i], 0,
+        sizes[i]
+      );
+      offset += sizes[i];
+    }
+    return ass;
+  }
+
+  public static <A> ArrayList<ArrayList<A>> group(Iterable<A> as, int group_size, Class<A> aClass) {
+    if (group_size < 0)
+      throw new Error(new IllegalArgumentException("group_size should be positive"));
+    else if (group_size == 1)
+      return wrap(list(as));
+    ArrayList<ArrayList<A>> res = new ArrayList<>();
+    AtomicReference<ArrayList<A>> group = new AtomicReference<>(new ArrayList<A>(group_size));
+    as.forEach(a -> {
+      if (group.get().size() == group_size) {
+        res.add(group.get());
+        group.set(new ArrayList<A>(group_size));
+      }
+      group.get().add(a);
+    });
+    res.add(group.get());
+    return res;
+  }
+
+  public static <A> ArrayList<ArrayList<A>> evenGroup(Iterable<A> as, int n_group, Class<A> aClass) {
+    if (n_group < 0)
+      throw new Error(new IllegalArgumentException("n_group should be positive"));
+    if (n_group == 0)
+      return new ArrayList<>();
+    else if (n_group == 1)
+      return wrap(list(as));
+    ArrayList<A>[] res = fill(n_group, () -> new ArrayList<A>(), ArrayList.class);
+    final int[] i = {0};
+    as.forEach(a -> {
+      res[i[0]].add(a);
+      i[0] = (i[0] + 1) % n_group;
+    });
+    return list(res);
+  }
+
+  public static <A> ArrayList<ArrayList<A>> randomGroup(Iterable<A> xs, int n_group) {
+    ArrayList<A>[] res = fill(n_group, () -> new ArrayList(), ArrayList.class);
+    xs.forEach(x -> res[random.nextInt(n_group)].add(x));
+    return list(res);
+  }
+
+  public static void foreach(int n, Consumer<Integer> f) {
+    for (int i = 0; i < n; i++) {
+      f.accept(i);
+    }
+  }
+
+  /*  from Haskell  */
+
+  public static <A> ArrayList<A> reverse(List<A> as) {
+    final int n = as.size();
+    ArrayList<A> bs = new ArrayList<A>(n);
+    for (int i = n - 1; i >= 0; i--) {
+      bs.add(as.get(i));
+    }
+    return bs;
+  }
+
+  public static <A> Function<Collection<A>, ArrayList<A>> append(Collection<A> a) {
+    return b -> {
+      ArrayList<A> c = new ArrayList<A>();
+      c.addAll(a);
+      c.addAll(b);
+      return c;
+    };
+  }
+
+  public static <A> Function<List<A>, ArrayList<A>> filter(Function<A, Boolean> f) {
+    return a -> list(a.stream().filter(f::apply));
+  }
+
+  /**
+   * @return List of two list (logically list pair of same type)
+   */
+  public static <A> Function<List<A>, ArrayList<ArrayList<A>>> span(Function<A, Boolean> f) {
+    return a -> {
+      ArrayList<A> b = new ArrayList<A>(a.size());
+      ArrayList<A> c = new ArrayList<A>(a.size());
+      final boolean[] met = {false};
+      a.stream().forEachOrdered(x -> {
+        if (met[0])
+          c.add(x);
+        else if
+          (f.apply(x)) b.add(x);
+        else {
+          met[0] = true;
+          c.add(x);
+        }
+      });
+      return pair(b, c).list();
+    };
+  }
+
+  public static <A> Function<ArrayList<A>, ArrayList<ArrayList<A>>> _break(Function<A, Boolean> f) {
+    return a -> reverse(span(f).apply(a));
+  }
+
+  public static Boolean and(ArrayList<Boolean> a) {
+    return a.stream().allMatch(Utils::id);
+  }
+
+  public static Boolean or(ArrayList<Boolean> a) {
+    return a.stream().anyMatch(Utils::id);
+  }
+
+  public static <A> Function<ArrayList<A>, Boolean> any(Function<A, Boolean> f) {
+    return a -> a.stream().anyMatch(f::apply);
+  }
+
+  public static <A> Function<ArrayList<A>, Boolean> all(Function<A, Boolean> f) {
+    return a -> a.stream().allMatch(f::apply);
+  }
+
+  public static <A> ArrayList<A> concat(Collection<Collection<A>> ass) {
+    return ass.stream()
+      .flatMap(Collection::stream)
+      .collect(Collectors.toCollection(ArrayList::new));
+  }
+
+  /**
+   * ( A -> [B] ) -> [A] -> [B]
+   */
+  public static <A, B> Function<Collection<A>, ArrayList<B>> concatMap(Function<A, Collection<B>> f) {
+    return a -> list(a.stream().map(f).flatMap(Collection::stream));
+  }
+
+  /**
+   * @not_used?
+   */
+  public static <A, B> Function<A, B> map(Function<A, B> f) {
+    return a -> f.apply(a);
+  }
+
+  /*  Monad  */
+
+  public interface Monad<A> {
+    /**
+     * @protected
+     */
+    A value();
+
+    /**
+     * @return itself
+     * @private
+     */
+    Monad<A> _setValue(A a);
+
+    default <T> Monad<T> newInstance() {
+      try {
+        return getClass().newInstance();
+      } catch (InstantiationException | IllegalAccessException e) {
+        e.printStackTrace();
+        throw new Error(getClass().getName() + " has not implement default constructor or it's private");
+      }
+    }
+
+    default <T> Monad<T> unit(T a) {
+      return (Monad<T>) newInstance()._setValue(a);
+    }
+
+    default <B> Monad<B> bind(Function<A, Monad<B>> f) {
+      return f.apply(value());
+    }
+
+    default <B> Monad<B> map(Function<A, B> f) {
+      return bind(f.andThen(this::unit));
+    }
+
+    default <B> B ap(Function<A, B> f) {
+      return f.apply(this.value());
+    }
+
+    default void apply(Consumer<A> f) {
+      f.accept(value());
+    }
+
+    Monad<A> concat(Monad<A> another);
+  }
+
+  public static <A> Monad<A> flat(Monad<Monad> mma) {
+//    return mma.unit((A) mma.value().value());
+    return mma.value();
+  }
+
+  public interface IO<A> extends Monad<Supplier<A>> {
+    default void _do() {
+      value().get();
+    }
+  }
+
+  static final WeakHashMap<Object, AtomicReference> LazyCache = new WeakHashMap();
+
+  public interface Lazy<A> extends Supplier<A>, Monad<A> {
+    A calc();
+
+    @Override
+    public default A get() {
+      LazyCache.computeIfAbsent(this, x -> new AtomicReference<>(calc()));
+      return (A) LazyCache.get(this).get();
+    }
+  }
+
+  public static <A> Lazy<A> lazy(Supplier<A> f) {
+    return new Lazy<A>() {
+      @Override
+      public A calc() {
+        return f.get();
+      }
+    };
   }
 }
