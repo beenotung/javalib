@@ -291,7 +291,7 @@ public class Utils {
     return Optional.empty();
   }
 
-  public static char[] toChars(Iterable<Character> cs, int size) {
+  public static char[] chars(Iterable<Character> cs, int size) {
     char[] res = new char[size];
     int i = 0;
     for (Character c : cs) {
@@ -300,11 +300,11 @@ public class Utils {
     return res;
   }
 
-  public static char[] toChars(Collection<Character> cs) {
-    return toChars(cs, cs.size());
+  public static char[] chars(Collection<Character> cs) {
+    return chars(cs, cs.size());
   }
 
-  public static ArrayList<Character> toChars(char[] cs) {
+  public static ArrayList<Character> chars(char[] cs) {
     ArrayList<Character> res = new ArrayList<>(cs.length);
     for (char a : cs) {
       res.add(a);
@@ -466,12 +466,12 @@ public class Utils {
     }
   }
 
-  public static <A> Optional<Class<A>> getComponentType(Collection<A> as) {
+  public static <A> Optional<Class<A>> componentType(Collection<A> as) {
     return as.stream().filter(a -> a != null).findAny().map(a -> (Class<A>) a.getClass());
   }
 
-  public static <A> Optional<Class<A>> getComponentType(A[] as) {
-    return getComponentType(Arrays.asList(as));
+  public static <A> Optional<Class<A>> componentType(A[] as) {
+    return componentType(Arrays.asList(as));
   }
 
   public static <A, B, C> Function<A, Function<B, C>> curry(Function<Pair<A, B>, C> f) {
@@ -971,6 +971,7 @@ public class Utils {
     }
   }
 
+  //TODO change component into IO?
   public static <A> Lazy<A> lazy(Supplier<A> f) {
     return new Lazy<A>() {
       @Override
