@@ -357,6 +357,11 @@ public class Utils {
       this._2 = _2;
     }
 
+    @Override
+    public String toString() {
+      return Utils.toString(_1, _2);
+    }
+
     public <C> Pair<A, C> new2(C _2) {
       return new Pair<A, C>(_1, _2);
     }
