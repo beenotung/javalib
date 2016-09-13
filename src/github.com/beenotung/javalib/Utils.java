@@ -384,6 +384,10 @@ public class Utils {
     public ArrayList list() {
       return Utils.list(array());
     }
+
+    public <C> Pair3<A, B, C> lift(C _3) {
+      return pair3(_1, _2, _3);
+    }
   }
 
   public static class Pair3<T1, T2, T3> {
