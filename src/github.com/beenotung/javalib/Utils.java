@@ -156,6 +156,10 @@ public class Utils {
     return String.valueOf(chars(cs.iterator()));
   }
 
+  public static String string(Collection<Character> cs) {
+    return String.valueOf(chars(cs.iterator()));
+  }
+
   public static <A> Stream<Pair<Integer, A>> indexedStream(Collection<A> as) {
     final int[] idx = {0};
     return as.stream().sequential().map(a -> pair(idx[0]++, a));
