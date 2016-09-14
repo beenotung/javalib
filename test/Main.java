@@ -17,7 +17,7 @@ public class Main {
     println("upper", cs.stream().map(Character::toUpperCase));
     println("no e", cs.stream().filter(c -> !c.equals('e')));
     println("full", cs);
-    println("groups", group(cs, 4));
+    println("groups", group(cs, 4, Character.class));
     println("even-groups", evenGroup(cs, 4));
     println();
     println("test stream utils");

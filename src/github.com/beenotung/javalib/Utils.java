@@ -128,20 +128,10 @@ public class Utils {
     return new ArrayList<A>(Arrays.asList(as));
   }
 
-  public static <A> ArrayList<A> list(Iterable<A> as) {
-    ArrayList<A> res = new ArrayList<A>();
-    as.forEach(res::add);
-    return res;
-  }
-
-  public static <A> ArrayList<A> list(Iterator<A> as) {
-    ArrayList<A> res = new ArrayList<A>();
-    as.forEachRemaining(res::add);
-    return res;
-  }
-
   public static <A> ArrayList<ArrayList<A>> wrap(ArrayList<A> as) {
-    return list(Arrays.asList(as));
+    ArrayList<ArrayList<A>> res = new ArrayList<>(1);
+    res.add(as);
+    return res;
   }
 
   public static <A> Stream<A> stream(A[] as) {
@@ -153,11 +143,11 @@ public class Utils {
   }
 
   public static String string(Stream<Character> cs) {
-    return String.valueOf(chars(cs.iterator()));
+    return String.valueOf(chars(cs));
   }
 
   public static String string(Collection<Character> cs) {
-    return String.valueOf(chars(cs.iterator()));
+    return String.valueOf(chars(cs.stream(), cs.size()));
   }
 
   public static <A> Stream<Pair<Integer, A>> indexedStream(Collection<A> as) {
@@ -247,6 +237,17 @@ public class Utils {
     return (A[][]) Array.newInstance(aClass, n1, n2);
   }
 
+  /*
+  * help cast type;
+  * use default inflate factor if necessary
+  * */
+  public static <A> ArrayList<A> emptyList(int init_size) {
+    if (init_size > 0)
+      return new ArrayList<A>(init_size);
+    else
+      return new ArrayList<A>();
+  }
+
   public static <A> A[][] empty(int n, Function<Integer, Integer> f, Class<A> aClass) {
     A[][] res = empty(n, 0, aClass);
     reset(res, i -> (A[]) Array.newInstance(aClass, f.apply(i)));
@@ -311,25 +312,19 @@ public class Utils {
     return Optional.empty();
   }
 
-  public static char[] chars(Iterable<Character> cs, int size) {
+  public static char[] chars(Stream<Character> cs, int size) {
     char[] res = new char[size];
-    int i = 0;
-    for (Character c : cs) {
-      res[i++] = c;
-    }
+    final int[] i = {0};
+    cs.forEachOrdered(c -> res[i[0]++] = c);
     return res;
   }
 
-  public static char[] chars(Iterator<Character> cs) {
-    return chars(list(cs));
+  public static char[] chars(Collection<Character> cs) {
+    return chars(cs.stream(), cs.size());
   }
 
   public static char[] chars(Stream<Character> cs) {
-    return chars(cs.iterator());
-  }
-
-  public static char[] chars(Collection<Character> cs) {
-    return chars(cs, cs.size());
+    return chars(list(cs));
   }
 
   public static ArrayList<Character> list(char[] cs) {
@@ -631,16 +626,22 @@ public class Utils {
     return b -> zipWith(f).apply(as).apply(b);
   }
 
-  public static <A, B> Pair<ArrayList<A>, ArrayList<B>> unzip(List<Pair<A, B>> xs) {
-    final int n = xs.size();
-    ArrayList<A> as = new ArrayList<A>(n);
-    ArrayList<B> bs = new ArrayList<B>(n);
-    Pair<ArrayList<A>, ArrayList<B>> res = new Pair(new ArrayList<A>(n), new ArrayList<B>(n));
-    xs.stream().forEachOrdered(x -> {
+  public static <A, B> Pair<ArrayList<A>, ArrayList<B>> unzip(Stream<Pair<A, B>> xs, int init_size) {
+    ArrayList<A> as = emptyList(init_size);
+    ArrayList<B> bs = emptyList(init_size);
+    xs.forEachOrdered(x -> {
       as.add(x._1);
       bs.add(x._2);
     });
     return pair(as, bs);
+  }
+
+  public static <A, B> Pair<ArrayList<A>, ArrayList<B>> unzip(Collection<Pair<A, B>> xs) {
+    return unzip(xs.stream(), xs.size());
+  }
+
+  public static <A, B> Pair<ArrayList<A>, ArrayList<B>> unzip(Stream<Pair<A, B>> xs) {
+    return unzip(xs, 0);
   }
 
   /**
@@ -663,15 +664,6 @@ public class Utils {
       res.get(k).add(x);
     });
     return res;
-  }
-
-  public static <A> Iterable<A> iterable(Stream<A> stream) {
-    return new Iterable<A>() {
-      @Override
-      public Iterator<A> iterator() {
-        return stream.iterator();
-      }
-    };
   }
 
   public static <A> A[][] group(A[] as, int group_size, Class<A> aClass) {
@@ -703,7 +695,11 @@ public class Utils {
     return ass;
   }
 
-  public static <A> ArrayList<ArrayList<A>> group(Iterable<A> as, int group_size) {
+  public static <A> A[][] group(Collection<A> as, int group_size, Class<A> aClass) {
+    return group(array(as, aClass), group_size, aClass);
+  }
+
+  public static <A> ArrayList<ArrayList<A>> group(Stream<A> as, int group_size) {
     if (group_size < 0)
       throw new Error(new IllegalArgumentException("group_size should be positive"));
     else if (group_size == 1)
@@ -721,7 +717,7 @@ public class Utils {
     return res;
   }
 
-  public static <A> ArrayList<ArrayList<A>> evenGroup(Iterable<A> as, int n_group) {
+  public static <A> ArrayList<ArrayList<A>> evenGroup(Stream<A> as, int n_group) {
     if (n_group < 0)
       throw new Error(new IllegalArgumentException("n_group should be positive"));
     if (n_group == 0)
@@ -737,10 +733,31 @@ public class Utils {
     return list(res);
   }
 
+  public static <A> ArrayList<ArrayList<A>> evenGroup(Collection<A> as, int n_group) {
+    return evenGroup(as.stream(), n_group);
+  }
+
   public static <A> ArrayList<ArrayList<A>> randomGroup(Iterable<A> xs, int n_group) {
     ArrayList<A>[] res = fill(n_group, () -> new ArrayList(), ArrayList.class);
     xs.forEach(x -> res[random.nextInt(n_group)].add(x));
     return list(res);
+  }
+
+  public static <A> Pair<ArrayList<A>, ArrayList<A>> copy(Stream<A> xs) {
+    return unzip(xs.map(x -> pair(x, x)));
+  }
+
+  /**
+   * copy reference, not deep clone
+   * if the stream element are mutable, don't use this function
+   * <p>
+   * Sample input : [1,2,3]
+   * Sample output : [[1,2,3], [1,2,3]]
+   */
+  public static <A> Stream<ArrayList<A>> copy(Stream<A> stream, int n_copy) {
+    ArrayList<A> list = list(stream);
+    return mkStream(n_copy)
+      .mapToObj(i -> list);
   }
 
   public static void foreach(int n, Consumer<Integer> f) {
