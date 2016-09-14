@@ -33,19 +33,21 @@ public class Utils {
 
   public static class ArrayStringBuffer {
     private String buffer;
-    boolean first = true;
+    boolean empty = true;
+    boolean single = true;
 
     public void add(Object o) {
-      if (first) {
-        first = false;
+      if (empty) {
+        empty = false;
         buffer = String.valueOf(o);
       } else {
+        single &= false;
         buffer += "," + String.valueOf(o);
       }
     }
 
     public String build() {
-      return "(" + buffer + ")";
+      return single ? buffer : "(" + buffer + ")";
     }
   }
 
