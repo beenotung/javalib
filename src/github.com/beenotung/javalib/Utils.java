@@ -341,6 +341,22 @@ public class Utils {
     return res;
   }
 
+  public static ArrayList<Double> list(double[] cs) {
+    ArrayList<Double> res = new ArrayList<>(cs.length);
+    for (double a : cs) {
+      res.add(a);
+    }
+    return res;
+  }
+
+  public static ArrayList<Integer> list(int[] cs) {
+    ArrayList<Integer> res = new ArrayList<>(cs.length);
+    for (int a : cs) {
+      res.add(a);
+    }
+    return res;
+  }
+
   public static ArrayList<Character> list(String s) {
     return list(s.toCharArray());
   }
