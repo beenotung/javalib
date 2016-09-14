@@ -643,6 +643,9 @@ public class Utils {
     return stream.sequential().map(s -> pair(i[0]++, s));
   }
 
+  /**
+   * [a] -> [b] -> [(a,b)]
+   */
   public static <A, B> Function<List<B>, ArrayList<Pair<A, B>>> zip(List<A> as) {
     Function<A, Function<B, Pair<A, B>>> f = a -> b -> new Pair<A, B>(a, b);
     return b -> zipWith(f).apply(as).apply(b);
@@ -786,6 +789,20 @@ public class Utils {
     for (int i = 0; i < n; i++) {
       f.accept(i);
     }
+  }
+
+  public static <A, B> ArrayList<Pair<A, B>> combine(Collection<A> as, Collection<B> bs) {
+    ArrayList<Pair<A, B>> res = new ArrayList<>(as.size() * bs.size());
+    for (A a : as) {
+      for (B b : bs) {
+        res.add(pair(a, b));
+      }
+    }
+    return res;
+  }
+
+  public static <A> ArrayList<Pair<A, A>> self_combine(Collection<A> as) {
+    return combine(as, as);
   }
 
   /*  from Haskell  */
