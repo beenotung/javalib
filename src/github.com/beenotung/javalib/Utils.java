@@ -134,6 +134,10 @@ public class Utils {
     return res;
   }
 
+  public static <A> AtomicReference<A> atom(A a) {
+    return new AtomicReference<A>(a);
+  }
+
   public static <A> Stream<A> stream(A[] as) {
     return list(as).stream();
   }
