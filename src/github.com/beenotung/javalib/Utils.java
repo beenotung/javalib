@@ -80,7 +80,7 @@ public class Utils {
         }
       } else {
         for (Object x : ((Object[]) o)) {
-          buffer.add(x);
+          buffer.add(objectToString(x));
         }
       }
       return buffer.build();
