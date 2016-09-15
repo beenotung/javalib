@@ -758,6 +758,13 @@ public class Utils {
     return res;
   }
 
+  /* the pair key should be unique, otherwise some records will be lost during this operation */
+  public static <K, V> HashMap<K, V> flatByKey(Stream<Pair<K, V>> stream) {
+    HashMap<K, V> res = new HashMap<K, V>();
+    stream.forEach(p -> res.put(p._1, p._2));
+    return res;
+  }
+
   public static <K, V> Stream<Pair<K, V>> stream(Map<K, V> map) {
     return map.entrySet().stream().map(p -> pair(p.getKey(), p.getValue()));
   }
