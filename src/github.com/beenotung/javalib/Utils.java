@@ -749,6 +749,19 @@ public class Utils {
     return group(array(as, aClass), group_size, aClass);
   }
 
+  public static <K, V> HashMap<K, ArrayList<V>> groupByKey(Stream<Pair<K, V>> stream) {
+    HashMap<K, ArrayList<V>> res = new HashMap<>();
+    stream.sequential().forEach(p -> {
+      res.putIfAbsent(p._1, new ArrayList<V>());
+      res.get(p._1).add(p._2);
+    });
+    return res;
+  }
+
+  public static <K, V> Stream<Pair<K, V>> stream(Map<K, V> map) {
+    return map.entrySet().stream().map(p -> pair(p.getKey(), p.getValue()));
+  }
+
   public static <A> ArrayList<ArrayList<A>> group(Stream<A> as, int group_size) {
     if (group_size < 0)
       throw new Error(new IllegalArgumentException("group_size should be positive"));
