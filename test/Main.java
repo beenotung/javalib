@@ -14,8 +14,8 @@ public class Main {
     println();
     ArrayList<Character> cs = list("this is a long text");
     println("size", cs.size());
-    println("upper", cs.stream().map(Character::toUpperCase));
-    println("no e", cs.stream().filter(c -> !c.equals('e')));
+    println("upper", string(cs.stream().map(Character::toUpperCase)));
+    println("no e", string(cs.stream().filter(c -> !c.equals('e'))));
     println("full", cs);
     println("groups", group(cs, 4, Character.class));
     println("even-groups", evenGroup(cs, 4));

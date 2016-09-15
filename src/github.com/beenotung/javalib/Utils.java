@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 public class Utils {
@@ -141,7 +142,7 @@ public class Utils {
   }
 
   public static <A> Stream<A> stream(A[] as) {
-    return list(as).stream();
+    return Stream.of(as);
   }
 
   public static Stream<Character> stream(String s) {
@@ -214,12 +215,16 @@ public class Utils {
     return mkStream(n).mapToObj(x -> s).reduce(String::concat).orElseGet(() -> "");
   }
 
+  public static LongStream mkStream(long offset, long n) {
+    return Stream.iterate(offset, i -> i++).mapToLong(Utils::id).limit(n);
+  }
+
   public static IntStream mkStream(int offset, int n) {
-    Integer[] xs = new Integer[n];
-    for (int i = 0; i < xs.length; i++) {
-      xs[i] = i + offset;
-    }
-    return stream(xs).mapToInt(Utils::id);
+    return Stream.iterate(offset, i -> i++).mapToInt(Utils::id).limit(n);
+  }
+
+  public static LongStream mkStream(long n) {
+    return mkStream(0L, n);
   }
 
   public static IntStream mkStream(int n) {
@@ -329,16 +334,28 @@ public class Utils {
     return chars(cs.stream(), cs.size());
   }
 
+  public static Character[] chars(char[] cs) {
+    Character[] res = new Character[cs.length];
+    for (int i = 0; i < cs.length; i++) {
+      res[i] = cs[i];
+    }
+    return res;
+  }
+
+  public static char[] chars(Character[] cs) {
+    char[] res = new char[cs.length];
+    for (int i = 0; i < cs.length; i++) {
+      res[i] = cs[i];
+    }
+    return res;
+  }
+
   public static char[] chars(Stream<Character> cs) {
     return chars(list(cs));
   }
 
   public static ArrayList<Character> list(char[] cs) {
-    ArrayList<Character> res = new ArrayList<>(cs.length);
-    for (char a : cs) {
-      res.add(a);
-    }
-    return res;
+    return new ArrayList<>(Arrays.asList(chars(cs)));
   }
 
   public static ArrayList<Double> list(double[] cs) {
