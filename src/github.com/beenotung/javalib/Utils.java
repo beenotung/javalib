@@ -984,8 +984,8 @@ public class Utils {
 
   /* the supplier will do side effect (block and wait function) */
   public interface IO<A> extends Monad<Supplier<A>> {
-    default void _do() {
-      value().get();
+    default A _do() {
+      return value().get();
     }
 
     default Promise<A, String> promise() {
@@ -1134,30 +1134,25 @@ public class Utils {
     return res;
   }
 
-  static final WeakHashMap<Object, AtomicReference> LazyCache = new WeakHashMap();
+  static final WeakHashMap<Lazy, Object> LazyCache = new WeakHashMap();
 
-  public interface Lazy<A> extends Supplier<A>, Monad<A> {
-    A calc();
-
+  public interface Lazy<A> extends Supplier<A>, IO<Supplier<A>> {
     @Override
-    default A value() {
-      return get();
-    }
-
-    @Override
-    public default A get() {
-      LazyCache.computeIfAbsent(this, x -> new AtomicReference<>(calc()));
-      return (A) LazyCache.get(this).get();
-    }
-  }
-
-  //TODO change component into IO?
-  public static <A> Lazy<A> lazy(Supplier<A> f) {
-    return new Lazy<A>() {
-      @Override
-      public A calc() {
-        return f.get();
+    default A get() {
+      if (LazyCache.containsKey(this)) {
+        return (A) LazyCache.get(this);
+      } else {
+        A a = value().get().get();
+        LazyCache.put(this, a);
+        return a;
       }
-    };
+    }
   }
+
+  public static <A extends IO<a>, a> Lazy<a> lazy(IO<a> io) {
+    return () -> io::value;
+  }
+
+  /* Genetic Algorithm */
+  /* TODO */
 }
