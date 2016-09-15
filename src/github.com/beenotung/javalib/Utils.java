@@ -302,6 +302,10 @@ public class Utils {
     return array(list(stream), aClass);
   }
 
+  public static <A> A[] array(A... as) {
+    return as;
+  }
+
   public static <A> Optional<A> firstNonNull(Iterable<A> as) {
     for (A a : as) {
       if (a != null)
