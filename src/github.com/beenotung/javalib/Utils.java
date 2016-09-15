@@ -647,6 +647,10 @@ public class Utils {
     return stream.sequential().map(s -> pair(i[0]++, s));
   }
 
+  public static <A> Stream<Pair<Integer, A>> zipWithIndex(Collection<A> list) {
+    return zipWithIndex(list.stream());
+  }
+
   /**
    * [a] -> [b] -> [(a,b)]
    */
