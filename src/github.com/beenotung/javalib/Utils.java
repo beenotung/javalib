@@ -836,6 +836,10 @@ public class Utils {
     }
   }
 
+  public static void par_foreach(int n, Consumer<Integer> f) {
+    mkStream(n).parallel().forEach(f::accept);
+  }
+
   public static <A, B> ArrayList<Pair<A, B>> combine(Collection<A> as, Collection<B> bs) {
     ArrayList<Pair<A, B>> res = new ArrayList<>(as.size() * bs.size());
     for (A a : as) {
