@@ -55,6 +55,7 @@ public class GA {
     public double a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
     public double[] fitnesses;
+    Integer[] idxs; // for sorting
   }
 
   public static class GeneRuntime<A> {
@@ -68,12 +69,14 @@ public class GA {
     }
 
     public void init(GeneRuntimeStatus initStatus) {
+      final int n_pop = initStatus.n_pop;
       this.status = initStatus;
-      status.genes = new byte[status.n_pop][status.l_gene];
-      status.fitnesses = new double[status.n_pop];
-      crossover_marks = new boolean[status.n_pop];
-      randoms = new Random[status.n_pop];
-      par_foreach(status.n_pop, i_pop -> {
+      status.genes = new byte[n_pop][status.l_gene];
+      status.fitnesses = new double[n_pop];
+      status.idxs = (Integer[]) tabulate(n_pop, Utils::id);
+      crossover_marks = new boolean[n_pop];
+      randoms = new Random[n_pop];
+      par_foreach(n_pop, i_pop -> {
         (randoms[i_pop] = new Random())
           .nextBytes(status.genes[i_pop]);
         eval(i_pop);
@@ -94,21 +97,30 @@ public class GA {
      * 3. update statics
      * */
     public void next() {
+      final int n_pop = status.n_pop;
       /** 1. crossover + mutation
        *     1. mark gens to cross
        * */
 
       /* 1. */
-      /*   1.1. */
-      int sum = 0;
-      for (double fitness : status.fitnesses) {
-        sum += fitness;
-      }
+      /*   1.1.  sort by fitness
+      *    1.2.  mark top N
+      *    1.3   matching (in-place crossover (kill-parent)
+      * */
 
-      for (int i = 0; i < status.fitnesses.length; i++) {
-//        crossover_marks[i] =
-      }
-//      status.genes
+      /* 1.1 */
+      final int crossover_threshold = (int) (status.p_crossover * n_pop);
+      Arrays.parallelSort(status.idxs, (a, b) -> Double.compare(status.fitnesses[a], status.fitnesses[b]));
+      /* 1.2 */
+      par_foreach(n_pop, i -> {
+        crossover_marks[i] = status.idxs[i] < crossover_threshold;
+      });
+      /* 1.3 */
+      par_foreach(n_pop, i -> {
+        par_foreach(n_pop - i, j -> {
+
+        });
+      });
 
     }
 
