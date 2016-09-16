@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-import static github.com.beenotung.javalib.Utils.*;
+import static com.github.beenotung.javalib.Utils.*;
 
 public class Main {
   public static void main(String[] args) throws Throwable {

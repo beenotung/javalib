@@ -1,4 +1,4 @@
-package github.com.beenotung.javalib;
+package com.github.beenotung.javalib;
 
 import java.io.InputStream;
 import java.io.PrintStream;

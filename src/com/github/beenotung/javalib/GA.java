@@ -1,11 +1,12 @@
-package github.com.beenotung.javalib;
+package com.github.beenotung.javalib;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
-import static github.com.beenotung.javalib.Utils.*;
+import static com.github.beenotung.javalib.Utils.*;
 
 /**
  * Instead of having package of ga, they are compacted into a public class statically
@@ -55,13 +56,14 @@ public class GA {
     public double a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
     public double[] fitnesses;
-    Integer[] idxs; // for sorting
+    Integer[] index; // for sorting
+    int[] reverseIndex;
   }
 
   public static class GeneRuntime<A> {
     private GeneRuntimeStatus status;
     public GeneProfile<A> profile;
-    Random[] randoms; // for concurrency access (it is using AtomicLong internal)
+    ThreadLocalRandom[] randoms; // for concurrency access (it is using AtomicLong internal)
     boolean[] crossover_marks;
 
     public GeneRuntime(GeneProfile<A> profile) {
@@ -73,11 +75,12 @@ public class GA {
       this.status = initStatus;
       status.genes = new byte[n_pop][status.l_gene];
       status.fitnesses = new double[n_pop];
-      status.idxs = (Integer[]) tabulate(n_pop, Utils::id);
+      status.index = (Integer[]) tabulate(n_pop, Utils::id);
+      status.reverseIndex = new int[n_pop];
       crossover_marks = new boolean[n_pop];
-      randoms = new Random[n_pop];
+      randoms = new ThreadLocalRandom[n_pop];
       par_foreach(n_pop, i_pop -> {
-        (randoms[i_pop] = new Random())
+        (randoms[i_pop] = ThreadLocalRandom.current())
           .nextBytes(status.genes[i_pop]);
         eval(i_pop);
       });
@@ -110,10 +113,11 @@ public class GA {
 
       /* 1.1 */
       final int crossover_threshold = (int) (status.p_crossover * n_pop);
-      Arrays.parallelSort(status.idxs, (a, b) -> Double.compare(status.fitnesses[a], status.fitnesses[b]));
+      Arrays.parallelSort(status.index, (a, b) -> Double.compare(status.fitnesses[a], status.fitnesses[b]));
       /* 1.2 */
       par_foreach(n_pop, i -> {
-        crossover_marks[i] = status.idxs[i] < crossover_threshold;
+        crossover_marks[i] = status.index[i] < crossover_threshold;
+        status.reverseIndex[status.index[i]] = i;
       });
       /* 1.3 */
       par_foreach(n_pop, i -> {
