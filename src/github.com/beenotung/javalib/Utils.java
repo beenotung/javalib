@@ -311,6 +311,18 @@ public class Utils {
     return as;
   }
 
+  public static Integer[] reverseByIndex(Integer[] xs) {
+    Integer[] res = new Integer[xs.length];
+    par_foreach(xs.length, i -> res[xs[i]] = i);
+    return res;
+  }
+
+  public static int[] reverseByIndex(int[] xs) {
+    int[] res = new int[xs.length];
+    par_foreach(xs.length, i -> res[xs[i]] = i);
+    return res;
+  }
+
   public static <A> Optional<A> firstNonNull(Iterable<A> as) {
     for (A a : as) {
       if (a != null)
