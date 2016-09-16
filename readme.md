@@ -1,11 +1,11 @@
-# javalib
-lib in pure java
+# JavaLib
+Library in pure Java
 
-similar to [jslib](https://github.com/beenotung/jslib), [myutils](https://github.com/beenotung/myutils)
-but this repo contains only java code
-minimal dependency on external library
-require jdk8 to work, please ...
-(not only the functionality in Stream, but the lambda expression is almost a must...)
+Similar to [jslib](https://github.com/beenotung/jslib), [myutils](https://github.com/beenotung/myutils)
+But this repo contains only java code
+Minimal dependency on external library
+Require jdk8 to work, please ...
+This library make use of interface with default implementation extensively
 
 ## Requirement
  - linux
@@ -42,3 +42,9 @@ To be easy to do chained operation (e.g. map)
 But only when the class is purely not depending on it's parent
 3. As abstract as possible in the parameter
 e.g. take Collection instead of List if possible
+
+## Reimplement
+Adapted concept or exactly re-implementing in Java
+1. [Scala](https://github.com/scala/scala)
+2. [Haskell](https://www.haskell.org/)
+3. [NeuroEvoluation](https://github.com/beenotung/NeuroEvolution)
