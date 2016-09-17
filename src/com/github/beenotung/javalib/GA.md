@@ -3,14 +3,14 @@ Genetic Algorithm
 
 ### phase 1
 crossover:
- - kill parent
- - select by top N
+ - done kill parent
+ - bad gene crossover with good gene (then replace bad gene)
 mutation:
  - only during crossover
 ### phase 2
 crossover:
  - flag indicate kill parent or not
- - select with randomness
+ - flag to only allow good gene to crossover (replace bad gene)
 ### phase 3
 save / load from file
 ### phase 4

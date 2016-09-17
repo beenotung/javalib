@@ -2,7 +2,6 @@ package com.github.beenotung.javalib;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
@@ -120,12 +119,15 @@ public class GA {
         status.reverseIndex[status.index[i]] = i;
       });
       /* 1.3 */
-      par_foreach(n_pop, i -> {
-        par_foreach(n_pop - i, j -> {
-
-        });
+      boolean allDone = false;
+      par_foreach(n_pop, bad_pop -> {
+        if (crossover_marks[bad_pop]) {
+          int good_pop;
+          do {
+            good_pop = randoms[bad_pop].nextInt(n_pop);
+          } while (crossover_marks[good_pop]);
+        }
       });
-
     }
 
     public void runUntil(Function<GeneRuntime, Boolean> f) {
