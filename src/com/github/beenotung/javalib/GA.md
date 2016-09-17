@@ -3,10 +3,10 @@ Genetic Algorithm
 
 ### phase 1
 crossover:
- - done kill parent
+ - don't kill parent
  - bad gene crossover with good gene (then replace bad gene)
 mutation:
- - only during crossover
+ - simple random
 ### phase 2
 crossover:
  - flag indicate kill parent or not
@@ -17,4 +17,7 @@ save / load from file
 add migration feature
  - exchange the gene with peer (socket)
 ### phase 5
-TODO
+mutation:
+ - related to diversity
+n_pop:
+ - related to diversity & system resource

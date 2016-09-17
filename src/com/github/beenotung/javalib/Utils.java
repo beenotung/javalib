@@ -216,11 +216,11 @@ public class Utils {
   }
 
   public static LongStream mkStream(long offset, long n) {
-    return Stream.iterate(offset, i -> i + 1).mapToLong(Utils::id).limit(n);
+    return Stream.iterate(offset, i -> i + 1).limit(n).mapToLong(Utils::id);
   }
 
   public static IntStream mkStream(int offset, int n) {
-    return Stream.iterate(offset, i -> i + 1).mapToInt(Utils::id).limit(n);
+    return Stream.iterate(offset, i -> i + 1).limit(n).mapToInt(Utils::id);
   }
 
   public static LongStream mkStream(long n) {
