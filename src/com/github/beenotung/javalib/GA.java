@@ -1,6 +1,5 @@
 package com.github.beenotung.javalib;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,10 +32,21 @@ public class GA {
       return eval(data(bytes));
     }
 
-    boolean customMutate = false;
+    default boolean customMutate() {
+      return false;
+    }
 
     default A mutate(A a) {
       throw new Error("not impl");
+    }
+
+    default byte[] mutate(byte[] gene) {
+//      byte[] res = bytes(mutate(data(gene)));
+//      System.arraycopy(
+//        res, 0,
+//        gene, 0,
+//        res.length);
+      return bytes(mutate(data(gene)));
     }
 
     default boolean isMinimizing() {
@@ -120,8 +130,8 @@ public class GA {
         final int crossover_threshold = (int) Math.ceil(status.n_pop * status.p_crossover);
         par_foreach(status.n_pop, i -> {
           /* mark Top N */
-          crossover_marks[i] = status.index[i] < crossover_threshold;
-          breed_marks[i] = status.index[i] >= crossover_threshold;
+          crossover_marks[i] = status.index[i] <= crossover_threshold;
+          breed_marks[i] = status.index[i] > crossover_threshold;
         });
       } else if (n_pop > status.n_pop) {
         /* 'release' extra, (to reduce memory usage) */
@@ -159,46 +169,80 @@ public class GA {
     public void next() {
       final int n_pop = status.n_pop;
       final int sort_direction = profile.isMinimizing() ? 1 : -1;
+      final boolean custom_mutate = profile.customMutate();
 
       /** 1. crossover + mutation
        *     1.1 matching (a non-Top N match with any one that better than itself)
        *     1.2 crossover (in-place crossover)
        *     1.3 mutation
        * */
-      final int crossover_threshold = (int) (status.p_crossover * n_pop);
+      final int crossover_threshold = round_up_to_even((int) (status.p_crossover * n_pop));
 //      boolean changed = false;
-      while (or(crossover_marks)) {
-        /* 1.1 matching */
-        final int p1 = randoms[0].nextInt(n_pop);
-        final int p2 = randoms[0].nextInt(n_pop);
-        final int c1 = randoms[0].nextInt(n_pop);
-        final int c2 = randoms[0].nextInt(n_pop);
-        if (breed_marks[p1] && breed_marks[p2] && crossover_marks[c1] && crossover_marks[c2]) {
-          crossover_marks[c1] = false;
-          crossover_marks[c2] = false;
-          /* 1.2 crossover */
-          par_foreach(l_gene, i_gene -> {
-            int i_random = i_gene % n_pop;
-            if (randoms[i_random].nextBoolean()) {
-              status.genes[c1][i_gene] = status.genes[p1][i_gene];
-              status.genes[c2][i_gene] = status.genes[p2][i_gene];
-            } else {
-              status.genes[c1][i_gene] = status.genes[p2][i_gene];
-              status.genes[c2][i_gene] = status.genes[p1][i_gene];
-            }
-          });
-        }
-      }
-      /* 1.3 mutation */
+//      while (or(crossover_marks)) {
+//        /* 1.1 matching */
+//        final int p1 = randoms[0].nextInt(n_pop);
+//        final int p2 = randoms[0].nextInt(n_pop);
+//        final int c1 = first_true(crossover_marks);
+//        if (c1 == -1)
+//          break;
+//        crossover_marks[c1] = false;
+//        final int c2 = first_true(crossover_marks);
+//        if (c2 == -1)
+//          break;
+//        crossover_marks[c2] = false;
+//        if ((p1 != p2) && breed_marks[p1] && breed_marks[p2] && crossover_marks[c1] && crossover_marks[c2]) {
+//          crossover_marks[c1] = false;
+//          crossover_marks[c2] = false;
+//          /* 1.2 crossover */
+//          par_foreach(l_gene, i_gene -> {
+//            int i_random = i_gene % n_pop;
+//            if (randoms[i_random].nextBoolean()) {
+//              status.genes[c1][i_gene] = status.genes[p1][i_gene];
+//              status.genes[c2][i_gene] = status.genes[p2][i_gene];
+//            } else {
+//              status.genes[c1][i_gene] = status.genes[p2][i_gene];
+//              status.genes[c2][i_gene] = status.genes[p1][i_gene];
+//            }
+//          });
+//        }
+//      }
+      /* 1.1 matching */
       par_foreach(n_pop, i_pop -> {
+        if (breed_marks[i_pop])
+          return;
+        int[] p1 = new int[1];
+        int[] p2 = new int[1];
+        do {
+          p1[0] = randoms[i_pop].nextInt(n_pop);
+          p2[0] = randoms[i_pop].nextInt(n_pop);
+        } while (!(breed_marks[p1[0]] && breed_marks[p2[0]]));
+//        println("p1,p2", p1, p2);
+         /* 1.2 crossover */
+        par_foreach(l_gene, i_gene -> {
+          int i_random = i_gene % n_pop;
+          if (randoms[i_random].nextBoolean()) {
+            status.genes[i_pop][i_gene] = status.genes[p1[0]][i_gene];
+          } else {
+            status.genes[i_pop][i_gene] = status.genes[p2[0]][i_gene];
+          }
+        });
+      });
+      /* 1.3 mutation */
+      par_foreach(n_pop - 1, i_pop -> {
         /* mutation happens only if crossover happened */
         if (breed_marks[i_pop])
           return;
-        if (randoms[i_pop].nextDouble() < status.p_mutation) {
-          foreach(l_gene, i_gene -> {
-            if (randoms[i_pop].nextInt() < status.a_mutation)
-              status.genes[i_pop][i_gene] += randoms[i_pop].nextInt();
-          });
+//        println("check mutate");
+        if (randoms[i_pop].nextDouble() <= status.p_mutation) {
+//          println("do mutate");
+          if (custom_mutate)
+//            profile.mutate(status.genes[i_pop]);
+            status.genes[i_pop] = profile.mutate(status.genes[i_pop]);
+          else
+            foreach(l_gene, i_gene -> {
+              if (randoms[i_pop].nextInt() <= status.a_mutation)
+                status.genes[i_pop][i_gene] += randoms[i_pop].nextInt();
+            });
         }
       });
 
@@ -209,8 +253,8 @@ public class GA {
       Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
       par_foreach(n_pop, i -> {
         /* mark Top N */
-        crossover_marks[i] = status.index[i] < crossover_threshold;
-        breed_marks[i] = status.index[i] >= crossover_threshold;
+        crossover_marks[i] = status.index[i] <= crossover_threshold;
+        breed_marks[i] = status.index[i] > crossover_threshold;
       });
 
       /* 3. update static */

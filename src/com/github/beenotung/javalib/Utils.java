@@ -880,6 +880,9 @@ public class Utils {
     return combine(as, as);
   }
 
+  public static int round_up_to_even(int i) {
+    return i + i % 2;
+  }
   /*  from Haskell  */
 
   public static <A> ArrayList<A> reverse(List<A> as) {
@@ -952,6 +955,14 @@ public class Utils {
         return true;
     }
     return false;
+  }
+
+  public static int first_true(boolean[] bs) {
+    for (int i = 0; i < bs.length; i++) {
+      if (bs[i])
+        return i;
+    }
+    return -1;
   }
 
   public static <A> Function<ArrayList<A>, Boolean> any(Function<A, Boolean> f) {
