@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -143,6 +144,11 @@ public class Utils {
 
   public static <A> Stream<A> stream(A[] as) {
     return Stream.of(as);
+  }
+
+  public static Stream<Boolean> stream(boolean[] bs) {
+    AtomicInteger idx = new AtomicInteger(0);
+    return Stream.iterate(bs[0], b -> bs[idx.incrementAndGet()]);
   }
 
   public static Stream<Character> stream(String s) {
@@ -386,6 +392,14 @@ public class Utils {
     ArrayList<Integer> res = new ArrayList<>(cs.length);
     for (int a : cs) {
       res.add(a);
+    }
+    return res;
+  }
+
+  public static ArrayList<Boolean> list(boolean[] bs) {
+    ArrayList<Boolean> res = new ArrayList<>(bs.length);
+    for (boolean b : bs) {
+      res.add(b);
     }
     return res;
   }
@@ -920,8 +934,24 @@ public class Utils {
     return a.stream().allMatch(Utils::id);
   }
 
+  public static boolean and(boolean[] bs) {
+    for (boolean b : bs) {
+      if (!b)
+        return false;
+    }
+    return true;
+  }
+
   public static Boolean or(ArrayList<Boolean> a) {
     return a.stream().anyMatch(Utils::id);
+  }
+
+  public static boolean or(boolean[] bs) {
+    for (boolean b : bs) {
+      if (b)
+        return true;
+    }
+    return false;
   }
 
   public static <A> Function<ArrayList<A>, Boolean> any(Function<A, Boolean> f) {

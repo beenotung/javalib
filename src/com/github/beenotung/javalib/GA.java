@@ -33,6 +33,12 @@ public class GA {
       return eval(data(bytes));
     }
 
+    boolean customMutate = false;
+
+    default A mutate(A a) {
+      throw new Error("not impl");
+    }
+
     default boolean isMinimizing() {
       return true;
     }
@@ -61,8 +67,7 @@ public class GA {
     public double a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
     public double[] fitnesses;
-    public Integer[] index; // ordering (for sorting)
-    public int[] reverseIndex; // ranking
+    public Integer[] index; // rank -> index (of parallel arrays)
   }
 
   public static class GeneRuntime<A> {
@@ -74,6 +79,7 @@ public class GA {
     public GeneProfile<A> profile;
     ThreadLocalRandom[] randoms; // for concurrency access (it is using AtomicLong internal)
     boolean[] crossover_marks;
+    boolean[] breed_marks;
 
     public GeneRuntime(GeneProfile<A> profile) {
       this.profile = profile;
@@ -92,7 +98,7 @@ public class GA {
      *     - update local copy at the end of this method
      * */
     void onStatusChanged() {
-      final int sort_direction = profile.isMinimizing() ? -1 : 1;
+      final int sort_direction = profile.isMinimizing() ? 1 : -1;
 
       if (n_pop == status.n_pop && l_gene == status.l_gene)
         return;
@@ -101,8 +107,8 @@ public class GA {
         status.genes = new byte[status.n_pop][status.l_gene]; // init later
         status.fitnesses = new double[status.n_pop];
         status.index = new Integer[status.n_pop]; // init later
-        status.reverseIndex = new int[status.n_pop]; // init later
         crossover_marks = new boolean[status.n_pop];
+        breed_marks = new boolean[status.n_pop];
         randoms = new ThreadLocalRandom[status.n_pop]; // init later
         par_foreach(status.n_pop, i_pop -> {
           (randoms[i_pop] = ThreadLocalRandom.current())
@@ -115,8 +121,7 @@ public class GA {
         par_foreach(status.n_pop, i -> {
           /* mark Top N */
           crossover_marks[i] = status.index[i] < crossover_threshold;
-          /* update reverse index (for parallel arrays) */
-          status.reverseIndex[status.index[i]] = i;
+          breed_marks[i] = status.index[i] >= crossover_threshold;
         });
       } else if (n_pop > status.n_pop) {
         /* 'release' extra, (to reduce memory usage) */
@@ -124,7 +129,6 @@ public class GA {
         status.genes = Arrays.copyOf(status.genes, status.n_pop);
         status.fitnesses = Arrays.copyOf(status.fitnesses, status.n_pop);
         status.index = Arrays.copyOf(status.index, status.n_pop);
-        status.reverseIndex = Arrays.copyOf(status.reverseIndex, n_pop);
       } else /* n_pop < status.n_pop */ {
         /* create extra */
         byte[][] genes = new byte[status.n_pop][status.l_gene];
@@ -154,7 +158,7 @@ public class GA {
      * */
     public void next() {
       final int n_pop = status.n_pop;
-      final int sort_direction = profile.isMinimizing() ? -1 : 1;
+      final int sort_direction = profile.isMinimizing() ? 1 : -1;
 
       /** 1. crossover + mutation
        *     1.1 matching (a non-Top N match with any one that better than itself)
@@ -162,26 +166,34 @@ public class GA {
        *     1.3 mutation
        * */
       final int crossover_threshold = (int) (status.p_crossover * n_pop);
-      /* 1.1 matching */
-      par_foreach(n_pop, bad_pop -> {
-//        println("par_foreach", "bad_pop", bad_pop);
-        if (crossover_marks[bad_pop]) {
-          final int[] good_pop = new int[1];
-          do {
-            good_pop[0] = randoms[bad_pop].nextInt(n_pop);
-          } while (status.index[bad_pop] > status.index[good_pop[0]]);
-//          println("good", good_pop, "bad", bad_pop);
+//      boolean changed = false;
+      while (or(crossover_marks)) {
+        /* 1.1 matching */
+        final int p1 = randoms[0].nextInt(n_pop);
+        final int p2 = randoms[0].nextInt(n_pop);
+        final int c1 = randoms[0].nextInt(n_pop);
+        final int c2 = randoms[0].nextInt(n_pop);
+        if (breed_marks[p1] && breed_marks[p2] && crossover_marks[c1] && crossover_marks[c2]) {
+          crossover_marks[c1] = false;
+          crossover_marks[c2] = false;
           /* 1.2 crossover */
-          foreach(status.l_gene, i_gene -> {
-            if (randoms[bad_pop].nextBoolean()) {
-//              println("copy on", i_gene);
-              status.genes[bad_pop][i_gene] = status.genes[good_pop[0]][i_gene];
+          par_foreach(l_gene, i_gene -> {
+            int i_random = i_gene % n_pop;
+            if (randoms[i_random].nextBoolean()) {
+              status.genes[c1][i_gene] = status.genes[p1][i_gene];
+              status.genes[c2][i_gene] = status.genes[p2][i_gene];
+            } else {
+              status.genes[c1][i_gene] = status.genes[p2][i_gene];
+              status.genes[c2][i_gene] = status.genes[p1][i_gene];
             }
           });
         }
-      });
+      }
       /* 1.3 mutation */
       par_foreach(n_pop, i_pop -> {
+        /* mutation happens only if crossover happened */
+        if (breed_marks[i_pop])
+          return;
         if (randoms[i_pop].nextDouble() < status.p_mutation) {
           foreach(l_gene, i_gene -> {
             if (randoms[i_pop].nextInt() < status.a_mutation)
@@ -192,14 +204,13 @@ public class GA {
 
       /* 2. */
       /* calc fitness */
-      par_foreach(n_pop, i_pop -> eval(i_pop));
+      par_foreach(n_pop, this::eval);
       /* sort by fitness */
       Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
       par_foreach(n_pop, i -> {
         /* mark Top N */
         crossover_marks[i] = status.index[i] < crossover_threshold;
-        /* update reverse index (for parallel arrays) */
-        status.reverseIndex[status.index[i]] = i;
+        breed_marks[i] = status.index[i] >= crossover_threshold;
       });
 
       /* 3. update static */
@@ -218,6 +229,16 @@ public class GA {
     public void updateStatus(Consumer<GeneRuntimeStatus> f) {
       f.accept(status);
       onStatusChanged();
+    }
+
+    /**@param rank start from zero*/
+    public A getDataByRank(int rank) {
+      return profile.data(status.genes[status.index[rank]]);
+    }
+
+    /**@param rank start from zero*/
+    public double getFitnessByRank(int rank) {
+      return status.fitnesses[status.index[rank]];
     }
   }
 
