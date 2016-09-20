@@ -31,11 +31,13 @@ public class Main {
     println();
     println("testing", "GA");
     GeneRuntimeStatus initStatus = new GeneRuntimeStatus();
-    initStatus.n_pop = 10;
+    initStatus.n_pop = 1000;
     initStatus.l_gene = Double.BYTES;
     initStatus.p_crossover = 0.25;
-    initStatus.p_mutation = 0.01;
-    initStatus.a_mutation = 0.001;
+    initStatus.p_mutation = 0.001;
+    initStatus.a_mutation = 0.0005;
+    final double[] x_max = {Double.MIN_VALUE};
+    final double[] x_min = {Double.MAX_VALUE};
     GA.GeneRuntime<Double> ga = GA.create(new GeneProfile<Double>() {
       @Override
       public byte[] bytes(Double data) {
@@ -51,18 +53,35 @@ public class Main {
 
       @Override
       public double eval(Double x) {
-        return 3 * x * x - 4 * x + 2;
+        // ~ -12
+        if (x > x_max[0])
+          x_max[0] = x;
+        else if (x < x_min[0])
+          x_min[0] = x;
+//        println(x);
+        return -0.25 * x * x - 6 * x + 2;
       }
 
       @Override
       public boolean isMinimizing() {
-        return true;
+        return false;
       }
     }, initStatus);
-    foreach(10,i->{
+    foreach(10000, i -> {
       ga.next();
-      println("best gene",ga.profile.data(ga.));
+      GeneRuntimeStatus status = ga.viewStatus();
+      byte[] best = status.genes[status.reverseIndex[0]];
+      double x = ga.profile.data(best);
+      double y = ga.profile.eval(x);
+      println(i + " : best gene", "x", x, "\ty", y);
     });
+    GeneRuntimeStatus status = ga.viewStatus();
+    byte[] best = status.genes[status.reverseIndex[0]];
+    double x = ga.profile.data(best);
+    double y = ga.profile.eval(x);
+    println("final best gene", "x", x, "\ty", y);
+    println("x_max", x_max, "x_min", x_min);
+    println("real solution", "x", -12d, "y", ga.profile.eval(-12d));
     println();
     println("testing", "end");
   }

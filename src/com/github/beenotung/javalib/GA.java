@@ -61,8 +61,8 @@ public class GA {
     public double a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
     public double[] fitnesses;
-    Integer[] index; // for sorting
-    int[] reverseIndex;
+    public Integer[] index; // ordering (for sorting)
+    public int[] reverseIndex; // ranking
   }
 
   public static class GeneRuntime<A> {
@@ -92,6 +92,8 @@ public class GA {
      *     - update local copy at the end of this method
      * */
     void onStatusChanged() {
+      final int sort_direction = profile.isMinimizing() ? -1 : 1;
+
       if (n_pop == status.n_pop && l_gene == status.l_gene)
         return;
       if (n_pop == 0) {
@@ -106,8 +108,9 @@ public class GA {
           (randoms[i_pop] = ThreadLocalRandom.current())
             .nextBytes(status.genes[i_pop]);
           eval(i_pop);
+          status.index[i_pop] = i_pop;
         });
-        Arrays.parallelSort(status.index, (a, b) -> Double.compare(status.fitnesses[a], status.fitnesses[b]));
+        Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
         final int crossover_threshold = (int) Math.ceil(status.n_pop * status.p_crossover);
         par_foreach(status.n_pop, i -> {
           /* mark Top N */
@@ -131,6 +134,8 @@ public class GA {
         });
         // TODO init new gene
       }
+      n_pop = status.n_pop;
+      l_gene = status.l_gene;
     }
 
     void eval(int i_pop) {
@@ -149,6 +154,7 @@ public class GA {
      * */
     public void next() {
       final int n_pop = status.n_pop;
+      final int sort_direction = profile.isMinimizing() ? -1 : 1;
 
       /** 1. crossover + mutation
        *     1.1 matching (a non-Top N match with any one that better than itself)
@@ -175,16 +181,20 @@ public class GA {
         }
       });
       /* 1.3 mutation */
-      par_foreach(n_pop,i_pop->{
-        // TODO mutation
-//        status.genes[i_pop].
+      par_foreach(n_pop, i_pop -> {
+        if (randoms[i_pop].nextDouble() < status.p_mutation) {
+          foreach(l_gene, i_gene -> {
+            if (randoms[i_pop].nextInt() < status.a_mutation)
+              status.genes[i_pop][i_gene] += randoms[i_pop].nextInt();
+          });
+        }
       });
 
       /* 2. */
       /* calc fitness */
       par_foreach(n_pop, i_pop -> eval(i_pop));
       /* sort by fitness */
-      Arrays.parallelSort(status.index, (a, b) -> Double.compare(status.fitnesses[a], status.fitnesses[b]));
+      Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
       par_foreach(n_pop, i -> {
         /* mark Top N */
         crossover_marks[i] = status.index[i] < crossover_threshold;
@@ -201,11 +211,11 @@ public class GA {
         next();
     }
 
-    GeneRuntimeStatus viewStatus() {
+    public GeneRuntimeStatus viewStatus() {
       return status;
     }
 
-    void updateStatus(Consumer<GeneRuntimeStatus> f) {
+    public void updateStatus(Consumer<GeneRuntimeStatus> f) {
       f.accept(status);
       onStatusChanged();
     }
