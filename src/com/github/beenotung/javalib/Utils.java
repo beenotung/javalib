@@ -237,6 +237,16 @@ public class Utils {
     return mkStream(0, n);
   }
 
+  public static <A> Stream<Collection<A>> cast(Stream<ArrayList<A>> xss) {
+    return xss.map(Utils::id);
+  }
+
+  public static <A> ArrayList<A> flatten(Stream<Collection<A>> xss) {
+    ArrayList<A> res = new ArrayList<A>();
+    xss.forEach(res::addAll);
+    return res;
+  }
+
   public static <A> Optional<Class<A>> optionalClass(A a) {
     return Optional.ofNullable(a).map(x -> (Class<A>) x.getClass());
   }
@@ -368,6 +378,22 @@ public class Utils {
     char[] res = new char[cs.length];
     for (int i = 0; i < cs.length; i++) {
       res[i] = cs[i];
+    }
+    return res;
+  }
+
+  public static Integer[] ints(int[] xs) {
+    Integer[] res = new Integer[xs.length];
+    for (int i = 0; i < xs.length; i++) {
+      res[i] = xs[i];
+    }
+    return res;
+  }
+
+  public static int[] ints(Integer[] xs) {
+    int[] res = new int[xs.length];
+    for (int i = 0; i < xs.length; i++) {
+      res[i] = xs[i];
     }
     return res;
   }
