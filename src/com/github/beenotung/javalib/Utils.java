@@ -147,6 +147,10 @@ public class Utils {
     return new AtomicReference<A>(a);
   }
 
+  public static Stream<Character> stream(char[] cs) {
+    return Stream.of(chars(cs));
+  }
+
   public static <A> Stream<A> stream(A[] as) {
     return Stream.of(as);
   }
@@ -253,6 +257,21 @@ public class Utils {
   public static <A> ArrayList<A> flatten(Stream<Collection<A>> xss) {
     ArrayList<A> res = new ArrayList<A>();
     xss.forEach(res::addAll);
+    return res;
+  }
+
+  public static char[] flatten(char[][] xss) {
+    int n = 0;
+    for (char[] xs : xss) {
+      n += xs.length;
+    }
+    char[] res = new char[n];
+    int i = 0;
+    for (char[] xs : xss) {
+      for (int j = 0; j < xs.length; j++) {
+        res[i++] = xs[j];
+      }
+    }
     return res;
   }
 
@@ -398,23 +417,20 @@ public class Utils {
     return res;
   }
 
-  public static Character[][] chars(char[][] css) {
-    Character[][] res = new Character[css.length][];
-    for (int i = 0; i < css.length; i++) {
-      res[i] = new Character[css.length];
-      for (int j = 0; j < css.length; j++) {
-        res[i][j] = css[i][j];
-      }
-    }
-    return res;
-  }
-
   public static char[] chars(Character[] cs) {
     char[] res = new char[cs.length];
     for (int i = 0; i < cs.length; i++) {
       res[i] = cs[i];
     }
     return res;
+  }
+
+  public static char[] chars(Stream<Character> cs) {
+    return chars(list(cs));
+  }
+
+  public static Character[] chars(String cs) {
+    return chars(cs.toCharArray());
   }
 
   public static Integer[] ints(int[] xs) {
@@ -431,10 +447,6 @@ public class Utils {
       res[i] = xs[i];
     }
     return res;
-  }
-
-  public static char[] chars(Stream<Character> cs) {
-    return chars(list(cs));
   }
 
   public static ArrayList<Character> list(char[] cs) {
