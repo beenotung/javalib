@@ -79,6 +79,11 @@ public class Utils {
               buffer.add(b);
             }
             break;
+          case "char":
+            for (char x : ((char[]) o)) {
+              buffer.add(x);
+            }
+            break;
           default:
             throw new Error("unsupported type");
         }
@@ -156,6 +161,10 @@ public class Utils {
   }
 
   public static String string(Stream<Character> cs) {
+    return String.valueOf(chars(cs));
+  }
+
+  public static String string(Character[] cs) {
     return String.valueOf(chars(cs));
   }
 
@@ -244,6 +253,21 @@ public class Utils {
   public static <A> ArrayList<A> flatten(Stream<Collection<A>> xss) {
     ArrayList<A> res = new ArrayList<A>();
     xss.forEach(res::addAll);
+    return res;
+  }
+
+  public static <A> A[] flatten(A[][] xss, Class<A> c) {
+    int n = 0;
+    for (A[] xs : xss) {
+      n += xs.length;
+    }
+    A[] res = (A[]) Array.newInstance(c, n);
+    int i = 0;
+    for (A[] xs : xss) {
+      for (int j = 0; j < xs.length; j++) {
+        res[i++] = xs[j];
+      }
+    }
     return res;
   }
 
@@ -370,6 +394,17 @@ public class Utils {
     Character[] res = new Character[cs.length];
     for (int i = 0; i < cs.length; i++) {
       res[i] = cs[i];
+    }
+    return res;
+  }
+
+  public static Character[][] chars(char[][] css) {
+    Character[][] res = new Character[css.length][];
+    for (int i = 0; i < css.length; i++) {
+      res[i] = new Character[css.length];
+      for (int j = 0; j < css.length; j++) {
+        res[i][j] = css[i][j];
+      }
     }
     return res;
   }
