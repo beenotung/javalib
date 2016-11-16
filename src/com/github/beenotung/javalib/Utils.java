@@ -4,7 +4,16 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -370,6 +379,14 @@ public class Utils {
     return as;
   }
 
+  public static byte[] bytes(char[] xs) {
+    byte[] res = new byte[xs.length];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = (byte) xs[i];
+    }
+    return res;
+  }
+
   public static Integer[] reverseByIndex(Integer[] xs) {
     Integer[] res = new Integer[xs.length];
     par_foreach(xs.length, i -> res[xs[i]] = i);
@@ -483,6 +500,12 @@ public class Utils {
 
   public static <A> ArrayList<A> list(Stream<A> a) {
     return a.collect(Collectors.toCollection(ArrayList::new));
+  }
+
+  public static ArrayList<Integer> list(IntStream a) {
+    ArrayList<Integer> res = new ArrayList<>();
+    a.sequential().forEachOrdered(res::add);
+    return res;
   }
 
   public static class Pair<A, B> {
@@ -1283,6 +1306,71 @@ public class Utils {
     return () -> io::value;
   }
 
-  /* Genetic Algorithm */
-  /* TODO */
+  public static boolean isPrintable(char a) {
+    return a > 31;
+  }
+
+  public static boolean isAlphabet(char a) {
+    return ('A' <= a && a <= 'Z') || ('a' <= a && a <= 'z');
+  }
+
+  public static boolean isDigit(char a) {
+    return '0' <= a && a <= '9';
+  }
+
+  public static boolean isWhitespace(char a) {
+    switch (a) {
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static boolean isSymbol(char a) {
+    switch (a) {
+      case '~':
+      case '`':
+      case '!':
+      case '@':
+      case '#':
+      case '$':
+      case '%':
+      case '^':
+      case '&':
+      case '*':
+      case '(':
+      case ')':
+      case '-':
+      case '_':
+      case '+':
+      case '=':
+      case '{':
+      case '}':
+      case '[':
+      case ']':
+      case ':':
+      case ';':
+      case '\'':
+      case '"':
+      case '<':
+      case '>':
+      case ',':
+      case '.':
+      case '/':
+      case '?':
+      case '|':
+      case '\\':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public static boolean isVisible(char a) {
+    return isDigit(a) || isAlphabet(a) || isWhitespace(a) || isSymbol(a);
+  }
 }

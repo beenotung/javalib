@@ -262,7 +262,7 @@ public class GA {
     }
 
     public void runUntil(Function<GeneRuntime, Boolean> f) {
-      while (f.apply(this))
+      while (!f.apply(this))
         next();
     }
 
