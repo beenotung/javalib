@@ -1332,6 +1332,36 @@ public class Utils {
     return res;
   }
 
+  public static Thread[] fork(final Runnable f, final int n_repeat) {
+    Thread[] res = new Thread[n_repeat];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = fork(f);
+    }
+    return res;
+  }
+
+  public static Thread[] fork(Runnable[] fs) {
+    Thread[] res = new Thread[fs.length];
+    for (int i = 0; i < fs.length; i++) {
+      res[i] = fork(fs[i]);
+    }
+    return res;
+  }
+
+  public static void wait(Thread[] ts) throws InterruptedException {
+    for (Thread t : ts) {
+      t.join();
+    }
+  }
+
+  public static void fork_and_wait(Runnable[] fs) throws InterruptedException {
+    wait(fork(fs));
+  }
+
+  public static void fork_and_wait(Runnable f, int n_repeat) throws InterruptedException {
+    wait(fork(f, n_repeat));
+  }
+
   public static <A, E> Defer<A, E> defer(Supplier<Either<A, E>> f) {
     Defer<A, E> res = new Defer<A, E>(new Promise<A, E>());
     fork(() -> f.get().apply(res::resolve, res::reject));
