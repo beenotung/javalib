@@ -73,10 +73,10 @@ public class Utils {
     if (os.length == 0)
       return;
     if (os.length == 1)
-      out.print(toString(os[0]));
+      out.println(toString(os[0]));
     else {
       if (PrintMode.mode == PrintMode.Scala) {
-        out.print(toString(os));
+        out.println(toString(os));
       } else {
         if (PrintMode.synchronize) {
           synchronized (PrintMode.lock) {
@@ -1459,6 +1459,12 @@ public class Utils {
 
   public static void write_to_file(String filename, String content) throws IOException {
     FileWriter w = new FileWriter(filename);
+    w.write(content);
+    w.close();
+  }
+
+  public static void append_to_file(String filename, String content) throws IOException {
+    FileWriter w = new FileWriter(filename, true);
     w.write(content);
     w.close();
   }
