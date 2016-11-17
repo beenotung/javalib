@@ -1,5 +1,7 @@
 package com.github.beenotung.javalib;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
@@ -1453,5 +1455,11 @@ public class Utils {
 
   public static boolean isVisible(char a) {
     return isDigit(a) || isAlphabet(a) || isWhitespace(a) || isSymbol(a);
+  }
+
+  public static void write_to_file(String filename, String content) throws IOException {
+    FileWriter w = new FileWriter(filename);
+    w.write(content);
+    w.close();
   }
 }
