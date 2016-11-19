@@ -1,5 +1,7 @@
 package com.github.beenotung.javalib;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
@@ -30,12 +32,63 @@ public class Utils {
   public static final Scanner scanner = new Scanner(in);
   public static final PrintStream out = System.out;
 
+  public static class PrintMode {
+    public static final byte Scala = 0;
+    public static final byte Go = 1;
+    public static byte mode = Go;
+
+    static final Object lock = new Object();
+    public static Boolean synchronize = true;
+
+    public static void print_go(Object[] os) {
+      out.print(Utils.toString(os[0]));
+      for (int i = 1; i < os.length; i++) {
+        out.print(" ");
+        out.print(Utils.toString(os[i]));
+      }
+    }
+  }
+
   public static void print(Object... os) {
-    out.print(toString(os));
+    if (os.length == 0)
+      return;
+    if (os.length == 1)
+      out.print(toString(os[0]));
+    else {
+      if (PrintMode.mode == PrintMode.Scala) {
+        out.print(toString(os));
+      } else {
+        if (PrintMode.synchronize) {
+          synchronized (PrintMode.lock) {
+            PrintMode.print_go(os);
+          }
+        } else {
+          PrintMode.print_go(os);
+        }
+      }
+    }
   }
 
   public static void println(Object... os) {
-    out.println(toString(os));
+    if (os.length == 0)
+      return;
+    if (os.length == 1)
+      out.println(toString(os[0]));
+    else {
+      if (PrintMode.mode == PrintMode.Scala) {
+        out.println(toString(os));
+      } else {
+        if (PrintMode.synchronize) {
+          synchronized (PrintMode.lock) {
+            PrintMode.print_go(os);
+            out.println();
+          }
+        } else {
+          PrintMode.print_go(os);
+          out.println();
+        }
+      }
+    }
   }
 
   public static void println() {
@@ -1311,6 +1364,36 @@ public class Utils {
     return res;
   }
 
+  public static Thread[] fork(final Runnable f, final int n_repeat) {
+    Thread[] res = new Thread[n_repeat];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = fork(f);
+    }
+    return res;
+  }
+
+  public static Thread[] fork(Runnable[] fs) {
+    Thread[] res = new Thread[fs.length];
+    for (int i = 0; i < fs.length; i++) {
+      res[i] = fork(fs[i]);
+    }
+    return res;
+  }
+
+  public static void wait(Thread[] ts) throws InterruptedException {
+    for (Thread t : ts) {
+      t.join();
+    }
+  }
+
+  public static void fork_and_wait(Runnable[] fs) throws InterruptedException {
+    wait(fork(fs));
+  }
+
+  public static void fork_and_wait(Runnable f, int n_repeat) throws InterruptedException {
+    wait(fork(f, n_repeat));
+  }
+
   public static <A, E> Defer<A, E> defer(Supplier<Either<A, E>> f) {
     Defer<A, E> res = new Defer<A, E>(new Promise<A, E>());
     fork(() -> f.get().apply(res::resolve, res::reject));
@@ -1403,5 +1486,17 @@ public class Utils {
   public static boolean isVisible(char a) {
     //return isDigit(a) || isAlphabet(a) || isWhitespace(a) || isSymbol(a);
     return 32 <= a && a < 127;
+  }
+
+  public static void write_to_file(String filename, String content) throws IOException {
+    FileWriter w = new FileWriter(filename);
+    w.write(content);
+    w.close();
+  }
+
+  public static void append_to_file(String filename, String content) throws IOException {
+    FileWriter w = new FileWriter(filename, true);
+    w.write(content);
+    w.close();
   }
 }
