@@ -151,7 +151,7 @@ public class GA2 {
       par_foreach(matches.length / 3, i -> {
         final int offset = i * 3;
         try {
-          iCrossover.crossover(gaRuntime.genes[offset], gaRuntime.genes[offset + 1], gaRuntime.genes[offset + 2]);
+          iCrossover.crossover(gaRuntime.genes[matches[offset]], gaRuntime.genes[matches[offset + 1]], gaRuntime.genes[matches[offset + 2]]);
         } catch (Exception e) {
           println(i, e);
         }
