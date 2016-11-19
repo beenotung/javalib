@@ -1,13 +1,4 @@
-import com.github.beenotung.javalib.GA;
-import com.github.beenotung.javalib.GA.GeneProfile;
-import com.github.beenotung.javalib.GA.GeneRuntimeStatus;
-
-import java.io.DataOutput;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.DoubleSummaryStatistics;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static com.github.beenotung.javalib.Utils.*;
 
@@ -45,86 +36,6 @@ public class Main {
     println();
     println("test stream utils");
     println("avg:", mkStream(1000).average().getAsDouble());
-    println();
-    println("testing", "GA");
-    GeneRuntimeStatus initStatus = new GeneRuntimeStatus();
-    initStatus.n_pop = 2048;
-    initStatus.l_gene = Double.BYTES;
-    initStatus.p_crossover = 0.25;
-    initStatus.p_mutation = 0.1;
-    initStatus.a_mutation = 1;
-    final double[] x_max = {Double.MIN_VALUE};
-    final double[] x_min = {Double.MAX_VALUE};
-    GA.GeneRuntime<Double> ga = GA.create(new GeneProfile<Double>() {
-      @Override
-      public byte[] bytes(Double data) {
-        byte[] res = new byte[Double.BYTES];
-        ByteBuffer.wrap(res).putDouble(data);
-        return res;
-      }
-
-      @Override
-      public boolean customMutate() {
-        return true;
-      }
-
-      @Override
-      public Double mutate(Double x) {
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-//        return x * rand.nextDouble(-Double.MAX_VALUE, Double.MAX_VALUE);
-//        double dx = Math.pow(10, rand.nextInt(-Double.MAX_EXPONENT, Double.MAX_EXPONENT));
-//        println("dx", dx);
-//        double r = rand.nextDouble(-1, 1);
-//        println("r", r);
-        return x * rand.nextDouble(-2, 2);
-      }
-
-      @Override
-      public Double data(byte[] bytes) {
-        return ByteBuffer.wrap(bytes).getDouble();
-      }
-
-      @Override
-      public double eval(Double x) {
-        if (Double.isNaN(x)) {
-//          println("x is NAN");
-          return -Double.MAX_VALUE;
-        }
-        // ~ -12
-        if (x > x_max[0])
-          x_max[0] = x;
-        else if (x < x_min[0])
-          x_min[0] = x;
-//        println(x);
-        double res = -0.25 * x * x - 6 * x + 2;
-        if (res == Double.NEGATIVE_INFINITY)
-          return -Double.MAX_VALUE;
-        return res;
-      }
-
-      @Override
-      public boolean isMinimizing() {
-        return false;
-      }
-    }, initStatus);
-    foreach(10000, i -> {
-      ga.next();
-      Double x1 = ga.getDataByRank(0);
-      double y1 = ga.getFitnessByRank(0);
-//      Double x2 = ga.getDataByRank(1);
-//      double y2 = ga.getFitnessByRank(1);
-//      Integer[] index = ga.viewStatus().index;
-//      println(i + " : best gene", "id", index[0], "x", x1, "\ty", y1, "\tsecond best", "id", index[1], "x", x2, "y", y2);
-//      println(i + " : best gene", "x", x1, "\ty", y1, "\tsecond best", "x", x2, "y", y2);
-      println(i + " : best gene", " \tx", x1, " \ty", y1);
-    });
-    GeneRuntimeStatus status = ga.viewStatus();
-    byte[] best = status.genes[status.index[0]];
-    double x = ga.profile.data(best);
-    double y = ga.profile.eval(x);
-    println("final best gene", "x", x, "\ty", y);
-    println("x_max", x_max, "x_min", x_min);
-    println("real solution", " \tx", -12d, " \ty", ga.profile.eval(-12d));
     println();
     println("testing", "end");
   }
