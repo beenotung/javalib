@@ -175,6 +175,10 @@ public class Utils {
     return offset + random.nextInt(range + 1);
   }
 
+  public static char randomVisibleChar() {
+    return (char) (random.nextInt(127 - 32) + 32);
+  }
+
   public static <A> A or(A a1, A a2) {
     return a1 == null
       ? a2

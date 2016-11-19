@@ -64,7 +64,7 @@ public class GA {
    * <h1>physical view : parallel array</h1>
    * <ul>
    *     <li>genes : Array of gene for individual-i</li>
-   *     <li>finesses : Array of fitness for the individual-i</li>
+   *     <li>fitnesses : Array of fitness for the individual-i</li>
    * </ul>
    * <p>
    * n_pop, l_gene, p_mutation, a_mutation can be changed in different turn

@@ -1,7 +1,6 @@
 package com.github.beenotung.javalib;
 
 import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -20,7 +19,7 @@ public class GA2 {
     public float p_mutation; // possibility for individual to mutate
     public float a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
-    public float[] finesses;
+    public float[] fitnesses;
     public Integer[] index; // rank -> index (of parallel arrays)
     public boolean isMinimizing = true;
 
@@ -30,6 +29,14 @@ public class GA2 {
       this.p_crossover = p_crossover;
       this.p_mutation = p_mutation;
       this.a_mutation = a_mutation;
+    }
+
+    public byte[] getGeneByRank(int rank) {
+      return genes[index[rank]];
+    }
+
+    public float getFitnessByRank(int rank) {
+      return fitnesses[index[rank]];
     }
   }
 
@@ -60,9 +67,10 @@ public class GA2 {
       }
       final ThreadLocalRandom r = ThreadLocalRandom.current();
       foreach(n_child, i -> {
-        matches[i] = r.nextInt(margin);
-        matches[i + 1] = r.nextInt(margin);
-        matches[i + 2] = r.nextInt(margin, gaRuntime.n_pop);
+        final int offset = i * 3;
+        matches[offset] = r.nextInt(margin);
+        matches[offset + 1] = r.nextInt(margin);
+        matches[offset + 2] = r.nextInt(margin, gaRuntime.n_pop);
       });
     }
   }
@@ -80,7 +88,7 @@ public class GA2 {
   }
 
   public interface IMutation {
-    void mutation(byte[] gene, ThreadLocalRandom r);
+    void mutation(GARuntime gaRuntime, byte[] gene, ThreadLocalRandom r);
   }
 
   public interface IEval {
@@ -90,8 +98,8 @@ public class GA2 {
   public static $MODULE $MODULE = new $MODULE();
 
   private static class $MODULE {
-    public IMutation DefaultIMutation(GARuntime gaRuntime) {
-      return (gene, r) -> foreach(gene.length, i -> {
+    public IMutation DefaultIMutation() {
+      return (gaRuntime, gene, r) -> foreach(gene.length, i -> {
         if (r.nextFloat() < gaRuntime.a_mutation) {
           gene[i] ^= 255;
         }
@@ -118,7 +126,7 @@ public class GA2 {
   void sort() {
     synchronized (gaRuntime) {
       final int sort_direction = gaRuntime.isMinimizing ? 1 : -1;
-      Arrays.parallelSort(gaRuntime.index, (a, b) -> sort_direction * Double.compare(gaRuntime.finesses[a], gaRuntime.finesses[b]));
+      Arrays.parallelSort(gaRuntime.index, (a, b) -> sort_direction * Double.compare(gaRuntime.fitnesses[a], gaRuntime.fitnesses[b]));
     }
   }
 
@@ -129,11 +137,13 @@ public class GA2 {
         gaRuntime.genes[i] = new byte[gaRuntime.l_gene];
         randomGene(gaRuntime.genes[i]);
       });
-      gaRuntime.finesses = new float[gaRuntime.n_pop];
-      gaRuntime.index = fill(gaRuntime.n_pop, 0);
+      gaRuntime.fitnesses = new float[gaRuntime.n_pop];
+      gaRuntime.index = tabulate(gaRuntime.n_pop, Utils::id, Integer.class);
+      par_foreach(gaRuntime.n_pop, i -> gaRuntime.fitnesses[i] = iEval.eval(gaRuntime.genes[i]));
       sort();
     }
   }
+
 
   /**
    * 1. matching
@@ -146,24 +156,24 @@ public class GA2 {
       /* 1. matching  */
       iMatching.match(gaRuntime, matchesRef);
       final int[] matches = matchesRef.get();
-      println("n_matches", matches.length, "/3", matches.length / 3);
       /* 2. crossover */
       par_foreach(matches.length / 3, i -> {
         final int offset = i * 3;
-        try {
-          iCrossover.crossover(gaRuntime.genes[matches[offset]], gaRuntime.genes[matches[offset + 1]], gaRuntime.genes[matches[offset + 2]]);
-        } catch (Exception e) {
-          println(i, e);
-        }
+        iCrossover.crossover(gaRuntime.genes[gaRuntime.index[matches[offset]]], gaRuntime.genes[gaRuntime.index[matches[offset + 1]]], gaRuntime.genes[gaRuntime.index[matches[offset + 2]]]);
+//        ThreadLocalRandom r = ThreadLocalRandom.current();
+//        if (r.nextFloat() <= gaRuntime.p_mutation) {
+//          iMutation.mutation(gaRuntime.genes[gaRuntime.index[matches[offset + 2]]], r);
+//        }
       });
       /* 3. mutation  */
       par_foreach(gaRuntime.n_pop, i -> {
         final ThreadLocalRandom r = ThreadLocalRandom.current();
         if (r.nextFloat() <= gaRuntime.p_mutation) {
-          iMutation.mutation(gaRuntime.genes[i], r);
+          iMutation.mutation(gaRuntime, gaRuntime.genes[i], r);
         }
       });
       /* 4. sort      */
+      par_foreach(gaRuntime.n_pop, i -> gaRuntime.fitnesses[i] = iEval.eval(gaRuntime.genes[i]));
       sort();
     }
   }
@@ -178,19 +188,18 @@ public class GA2 {
       }
       {
         float[] new_finesses = new float[n];
-        System.arraycopy(gaRuntime.finesses, 0, new_finesses, 0, min_n);
-        gaRuntime.finesses = new_finesses;
+        System.arraycopy(gaRuntime.fitnesses, 0, new_finesses, 0, min_n);
+        gaRuntime.fitnesses = new_finesses;
       }
-      gaRuntime.index = fill(n, 0);
-
+      gaRuntime.index = tabulate(n, Utils::id, Integer.class);
 
       mkStream(gaRuntime.n_pop, n - gaRuntime.n_pop).parallel().forEach(i -> {
         gaRuntime.genes[i] = new byte[gaRuntime.l_gene];
         randomGene(gaRuntime.genes[i]);
-        gaRuntime.finesses[i] = iEval.eval(gaRuntime.genes[i]);
+        gaRuntime.fitnesses[i] = iEval.eval(gaRuntime.genes[i]);
       });
-
       sort();
+
       gaRuntime.n_pop = n;
     }
   }
@@ -205,7 +214,9 @@ public class GA2 {
           gaRuntime.genes[i] = new_gene;
         }
         randomGene(gaRuntime.genes[i], min_l);
+        gaRuntime.fitnesses[i] = iEval.eval(gaRuntime.genes[i]);
       });
+      sort();
       gaRuntime.l_gene = l;
     }
   }
@@ -242,7 +253,7 @@ public class GA2 {
     this.iRandomGene = param.I_RANDOM_GENE();
     this.iCrossover = param.I_CROSSOVER();
     this.iMatching = param.I_MATCHING();
-    this.iMutation = param.I_MUTATION() == null ? $MODULE.DefaultIMutation(gaRuntime) : param.I_MUTATION();
+    this.iMutation = param.I_MUTATION() == null ? $MODULE.DefaultIMutation() : param.I_MUTATION();
     this.iEval = param.I_EVAL();
     this.matchesRef = new AtomicReference<>(new int[gaRuntime.n_pop]);
   }
