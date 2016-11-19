@@ -248,7 +248,10 @@ public class Utils {
   }
 
   public static IntStream mkStream(int offset, int n) {
-    return Stream.iterate(offset, i -> i + 1).limit(n).mapToInt(Utils::id);
+    if (n <= 0)
+      return Stream.empty().mapToInt(x -> 0);
+    else
+      return Stream.iterate(offset, i -> i + 1).limit(n).mapToInt(Utils::id);
   }
 
   public static LongStream mkStream(long n) {
@@ -675,6 +678,10 @@ public class Utils {
     }
   }
 
+  public static <A> void par_update(A[] list, Function<A, A> f) {
+    par_foreach(list.length, i -> list[i] = f.apply(list[i]));
+  }
+
   public static <L extends List<A>, A> void update(L list, Function<A, A> f) {
     for (int i = 0; i < list.size(); i++) {
       list.set(i, f.apply(list.get(i)));
@@ -685,6 +692,10 @@ public class Utils {
     for (int i = 0; i < list.length; i++) {
       list[i] = f.apply(i);
     }
+  }
+
+  public static <A> void par_reset(A[] list, Function<Integer, A> f) {
+    par_foreach(list.length, i -> list[i] = f.apply(i));
   }
 
   public static <L extends List<A>, A> void reset(L list, Function<Integer, A> f) {
@@ -699,10 +710,29 @@ public class Utils {
     }
   }
 
+  public static <A> void par_replace(A[] list, BiFunction<Integer, A, A> f) {
+    par_foreach(list.length, i -> list[i] = f.apply(i, list[i]));
+  }
+
   public static <L extends List<A>, A> void replace(L list, BiFunction<Integer, A, A> f) {
     for (int i = 0; i < list.size(); i++) {
       list.set(i, f.apply(i, list.get(i)));
     }
+  }
+
+  public static <B, A> B foldl(A[] list, BiFunction<B, A, B> f, B init) {
+    for (A b : list) {
+      init = f.apply(init, b);
+    }
+    return init;
+  }
+
+  public static <A> A foldl1(A[] list, BiFunction<A, A, A> f) {
+    A acc = list[0];
+    for (int i = 1; i < list.length; i++) {
+      acc = f.apply(acc, list[i]);
+    }
+    return acc;
   }
 
   public static <A> Optional<Class<A>> componentType(Collection<A> as) {
@@ -1371,6 +1401,7 @@ public class Utils {
   }
 
   public static boolean isVisible(char a) {
-    return isDigit(a) || isAlphabet(a) || isWhitespace(a) || isSymbol(a);
+    //return isDigit(a) || isAlphabet(a) || isWhitespace(a) || isSymbol(a);
+    return 32 <= a && a < 127;
   }
 }

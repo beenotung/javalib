@@ -64,7 +64,7 @@ public class GA {
    * <h1>physical view : parallel array</h1>
    * <ul>
    *     <li>genes : Array of gene for individual-i</li>
-   *     <li>fitnesses : Array of fitness for the individual-i</li>
+   *     <li>finesses : Array of fitness for the individual-i</li>
    * </ul>
    * <p>
    * n_pop, l_gene, p_mutation, a_mutation can be changed in different turn
@@ -76,7 +76,7 @@ public class GA {
     public double p_mutation; // possibility for individual to mutate
     public double a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
     public byte[][] genes;
-    public double[] fitnesses;
+    public double[] finesses;
     public Integer[] index; // rank -> index (of parallel arrays)
   }
 
@@ -115,7 +115,7 @@ public class GA {
       if (n_pop == 0) {
         /* create from blank */
         status.genes = new byte[status.n_pop][status.l_gene]; // init later
-        status.fitnesses = new double[status.n_pop];
+        status.finesses = new double[status.n_pop];
         status.index = new Integer[status.n_pop]; // init later
         crossover_marks = new boolean[status.n_pop];
         breed_marks = new boolean[status.n_pop];
@@ -126,7 +126,7 @@ public class GA {
           eval(i_pop);
           status.index[i_pop] = i_pop;
         });
-        Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
+        Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.finesses[a], status.finesses[b]));
         final int crossover_threshold = (int) Math.ceil(status.n_pop * status.p_crossover);
         par_foreach(status.n_pop, i -> {
           /* mark Top N */
@@ -137,7 +137,7 @@ public class GA {
         /* 'release' extra, (to reduce memory usage) */
         // TODO check gene size
         status.genes = Arrays.copyOf(status.genes, status.n_pop);
-        status.fitnesses = Arrays.copyOf(status.fitnesses, status.n_pop);
+        status.finesses = Arrays.copyOf(status.finesses, status.n_pop);
         status.index = Arrays.copyOf(status.index, status.n_pop);
       } else /* n_pop < status.n_pop */ {
         /* create extra */
@@ -153,7 +153,7 @@ public class GA {
     }
 
     void eval(int i_pop) {
-      status.fitnesses[i_pop] = profile.eval(status.genes[i_pop]);
+      status.finesses[i_pop] = profile.eval(status.genes[i_pop]);
     }
 
     public void reset() {
@@ -250,7 +250,7 @@ public class GA {
       /* calc fitness */
       par_foreach(n_pop, this::eval);
       /* sort by fitness */
-      Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.fitnesses[a], status.fitnesses[b]));
+      Arrays.parallelSort(status.index, (a, b) -> sort_direction * Double.compare(status.finesses[a], status.finesses[b]));
       par_foreach(n_pop, i -> {
         /* mark Top N */
         crossover_marks[i] = status.index[i] <= crossover_threshold;
@@ -282,7 +282,7 @@ public class GA {
 
     /**@param rank start from zero*/
     public double getFitnessByRank(int rank) {
-      return status.fitnesses[status.index[rank]];
+      return status.finesses[status.index[rank]];
     }
   }
 
