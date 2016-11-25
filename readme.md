@@ -4,8 +4,14 @@ Library in pure Java
 Similar to [jslib](https://github.com/beenotung/jslib), [myutils](https://github.com/beenotung/myutils)
 But this repo contains only java code
 Minimal dependency on external library
-Require jdk8 to work, please ...
-This library make use of interface with default implementation extensively
+
+## src
+Require jdk8 to work.
+This library make use of interface with default implementation extensively.
+
+## src7
+Relay on jdk7, reinventing some stuff from java8 (might not in java style).
+For the sake of android dev under Android 7.0
 
 ## Requirement
  - linux
