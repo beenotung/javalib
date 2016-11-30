@@ -1,5 +1,7 @@
 package com.github.beenotung.javalib;
 
+import com.sun.org.apache.xml.internal.utils.res.IntArrayWrapper;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -730,6 +732,12 @@ public class Utils {
   }
 
   public static <A> void update(A[] list, Function<A, A> f) {
+    for (int i = 0; i < list.length; i++) {
+      list[i] = f.apply(list[i]);
+    }
+  }
+
+  public static void update(byte[] list, Function<Byte, Byte> f) {
     for (int i = 0; i < list.length; i++) {
       list[i] = f.apply(list[i]);
     }
@@ -1502,5 +1510,56 @@ public class Utils {
     FileWriter w = new FileWriter(filename, true);
     w.write(content);
     w.close();
+  }
+
+  /**
+   * C style wrappers
+   * low level stuff
+   * to avoid creating new array instance, and faster access than using list
+   * */
+  public static class ObjectArray<A> {
+    public A[] data;
+    public int offset;
+    public int len; /* number of valid data starting from offset, can be smaller than data.length */
+  }
+
+  public static class ByteArray {
+    public byte[] data;
+    public int offset;
+    public int len;
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof ByteArray) {
+        ByteArray o = (ByteArray) obj;
+
+        if (this.len != o.len)
+          return false;
+
+        for (int i = 0; i < len; i++) {
+          if (data[i + offset] != o.data[i + o.offset]) {
+            return false;
+          }
+        }
+      }
+      return super.equals(obj);
+    }
+  }
+
+  public static class IntArray {
+    public int[] data;
+    public int offset;
+    public int len;
+  }
+
+  public static class CharArray {
+    public char[] data;
+    public int offset;
+    public int len;
+
+    @Override
+    public String toString() {
+      return new String(data, offset, len);
+    }
   }
 }
