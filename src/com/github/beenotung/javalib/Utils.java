@@ -1,7 +1,5 @@
 package com.github.beenotung.javalib;
 
-import com.sun.org.apache.xml.internal.utils.res.IntArrayWrapper;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1521,12 +1519,40 @@ public class Utils {
     public A[] data;
     public int offset;
     public int len; /* number of valid data starting from offset, can be smaller than data.length */
+
+    public ObjectArray(int size, Class<A> aClass) {
+      data = (A[]) Array.newInstance(aClass, size);
+      len = size;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof ObjectArray) {
+        ObjectArray o = (ObjectArray) obj;
+
+        if (this.len != o.len)
+          return false;
+
+        for (int i = 0; i < len; i++) {
+          if (data[i + offset] != o.data[i + o.offset]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return super.equals(obj);
+    }
   }
 
   public static class ByteArray {
     public byte[] data;
     public int offset;
     public int len;
+
+    public ByteArray(int size) {
+      data = new byte[size];
+      len = size;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -1541,6 +1567,7 @@ public class Utils {
             return false;
           }
         }
+        return true;
       }
       return super.equals(obj);
     }
@@ -1550,6 +1577,29 @@ public class Utils {
     public int[] data;
     public int offset;
     public int len;
+
+    public IntArray(int size) {
+      data = new int[size];
+      len = size;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof IntArray) {
+        IntArray o = (IntArray) obj;
+
+        if (this.len != o.len)
+          return false;
+
+        for (int i = 0; i < len; i++) {
+          if (data[i + offset] != o.data[i + o.offset]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return super.equals(obj);
+    }
   }
 
   public static class CharArray {
@@ -1560,6 +1610,29 @@ public class Utils {
     @Override
     public String toString() {
       return new String(data, offset, len);
+    }
+
+    public CharArray(int size) {
+      data = new char[size];
+      len = size;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof CharArray) {
+        CharArray o = (CharArray) obj;
+
+        if (this.len != o.len)
+          return false;
+
+        for (int i = 0; i < len; i++) {
+          if (data[i + offset] != o.data[i + o.offset]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return super.equals(obj);
     }
   }
 }
