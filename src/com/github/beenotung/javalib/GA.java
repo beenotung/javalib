@@ -18,10 +18,10 @@ public class GA {
     public float p_crossover; // threshed of top p percentage
     public float p_mutation; // possibility for individual to mutate
     public float a_mutation; // possibility for genome to mutate (when p_mutation satisfy)
+    public boolean isMinimizing = true;
     public byte[][] genes;
     public float[] fitnesses;
     public Integer[] index; // rank -> index (of parallel arrays)
-    public boolean isMinimizing = true;
 
     public GARuntime(int n_pop, int l_gene, float p_crossover, float p_mutation, float a_mutation) {
       this.n_pop = n_pop;
@@ -29,6 +29,15 @@ public class GA {
       this.p_crossover = p_crossover;
       this.p_mutation = p_mutation;
       this.a_mutation = a_mutation;
+    }
+
+    public GARuntime(int n_pop, int l_gene, float p_crossover, float p_mutation, float a_mutation, boolean isMinimizing) {
+      this.n_pop = n_pop;
+      this.l_gene = l_gene;
+      this.p_crossover = p_crossover;
+      this.p_mutation = p_mutation;
+      this.a_mutation = a_mutation;
+      this.isMinimizing = isMinimizing;
     }
 
     /** descending ranking, start from zero */
@@ -143,6 +152,16 @@ public class GA {
       gaRuntime.index = tabulate(gaRuntime.n_pop, Utils::id, Integer.class);
       par_foreach(gaRuntime.n_pop, i -> gaRuntime.fitnesses[i] = iEval.eval(gaRuntime.genes[i]));
       sort();
+    }
+  }
+
+  /**
+   *  randomize the population
+   *  will NOT change any size
+   *  */
+  public void reset() {
+    synchronized (gaRuntime) {
+      par_foreach(gaRuntime.n_pop, i -> randomGene(gaRuntime.genes[i]));
     }
   }
 
@@ -263,6 +282,44 @@ public class GA {
   public void useRuntime(Consumer<GARuntime> f) {
     synchronized (gaRuntime) {
       f.accept(gaRuntime);
+    }
+  }
+
+  public static class GAUtils {
+    /**
+     * @remark only support fixed fitness target
+     * @remark the decay rate is actually (100% - decay rate)
+     * @return int : restart count
+     * */
+    public static int simpleRestartUntilTargetFitness(final GA ga, final float target_fitness, final float p_mutation_decay_rate, final float a_mutation_decay_rate) {
+      final float init_p_mutation = ga.gaRuntime.p_mutation;
+      final float init_a_mutation = ga.gaRuntime.a_mutation;
+      int count = 0;
+      ga.init();
+      for (; ; ) {
+        ga.next();
+        if (ga.gaRuntime.getFitnessByRank(0) == target_fitness) {
+          break;
+        }
+        boolean should_reset = false;
+        if (ga.gaRuntime.p_mutation > Float.MIN_NORMAL) {
+          ga.gaRuntime.p_mutation *= p_mutation_decay_rate;
+        } else {
+          ga.gaRuntime.p_mutation = init_p_mutation;
+          should_reset = true;
+        }
+        if (ga.gaRuntime.a_mutation > Float.MIN_NORMAL) {
+          ga.gaRuntime.a_mutation *= a_mutation_decay_rate;
+        } else {
+          ga.gaRuntime.a_mutation = init_a_mutation;
+          should_reset = true;
+        }
+        if (should_reset) {
+          count++;
+          ga.reset();
+        }
+      }
+      return count;
     }
   }
 }

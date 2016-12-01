@@ -237,7 +237,7 @@ public class Utils {
     }
     if (time > 0) {
       b.append(time);
-      b.append(" ns. ");
+      b.append(" ns.");
     }
     return b.toString();
   }
