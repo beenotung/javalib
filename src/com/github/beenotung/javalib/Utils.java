@@ -1571,6 +1571,30 @@ public class Utils {
       }
       return super.equals(obj);
     }
+
+    @Override
+    public String toString() {
+      StringBuilder b = new StringBuilder(len);
+      b.append(getClass().getName());
+      b.append('[');
+      if (0 < len && len <= 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < len; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+      } else if (len > 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < 9; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+        b.append(" ... ");
+        b.append(data[offset + len - 1]);
+      }
+      b.append(']');
+      return b.toString();
+    }
   }
 
   public static class IntArray {
