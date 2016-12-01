@@ -169,10 +169,93 @@ public class Utils {
       return objectToString(os);
   }
 
+  /**
+   * calendar insensitive
+   * inaccurate when when larger than a month
+   * */
+  public static final long YEAR = 1;
+  public static final long MONTH = YEAR * 12;
+  public static final long WEEK = MONTH * 4;
+  public static final long DAY = WEEK * 7;
+  public static final long HOUR = DAY * 24;
+  public static final long MINUTE = HOUR * 60;
+  public static final long SECOND = MINUTE * 60;
+  public static final long MILLISECOND = SECOND * 1000;
+  public static final long NANOSECOND = SECOND * 1000 * 1000 * 1000;
+
+  public static final long NANO_IN_MICROSECOND = 1000L;
+  public static final long NANO_IN_MILLISECOND = NANO_IN_MICROSECOND * 1000L;
+  public static final long NANO_IN_SECOND = NANO_IN_MILLISECOND * 1000L;
+  public static final long NANO_IN_MINUTE = NANO_IN_SECOND * 60L;
+  public static final long NANO_IN_HOUR = NANO_IN_MINUTE * 60L;
+  public static final long NANO_IN_DAY = NANO_IN_HOUR * 24L;
+  public static final long NANO_IN_WEEK = NANO_IN_DAY * 7L;
+  public static final long NANO_IN_MONTH = NANO_IN_WEEK * 4L;
+  public static final long NANO_IN_YEAR = NANO_IN_MONTH * 12L;
+
+  public static String nano_to_string(long time) {
+    StringBuilder b = new StringBuilder();
+    if (time > NANO_IN_YEAR) {
+      b.append(time / NANO_IN_YEAR);
+      b.append(" year ");
+      time %= NANO_IN_YEAR;
+    }
+    if (time > NANO_IN_MONTH) {
+      b.append(time / NANO_IN_MONTH);
+      b.append(" month ");
+      time %= NANO_IN_MONTH;
+    }
+    if (time > NANO_IN_WEEK) {
+      b.append(time / NANO_IN_WEEK);
+      b.append(" week ");
+      time %= NANO_IN_WEEK;
+    }
+    if (time > NANO_IN_DAY) {
+      b.append(time / NANO_IN_DAY);
+      b.append(" day ");
+      time %= NANO_IN_DAY;
+    }
+    if (time > NANO_IN_HOUR) {
+      b.append(time / NANO_IN_HOUR);
+      b.append(" hr. ");
+      time %= NANO_IN_HOUR;
+    }
+    if (time > NANO_IN_MINUTE) {
+      b.append(time / NANO_IN_MINUTE);
+      b.append(" min. ");
+      time %= NANO_IN_MINUTE;
+    }
+    if (time > NANO_IN_SECOND) {
+      b.append(time / NANO_IN_SECOND);
+      b.append(" sec. ");
+      time %= NANO_IN_SECOND;
+    }
+    if (time > NANO_IN_MILLISECOND) {
+      b.append(time / NANO_IN_MILLISECOND);
+      b.append(" ms. ");
+      time %= NANO_IN_MILLISECOND;
+    }
+    if (time > 0) {
+      b.append(time);
+      b.append(" ns. ");
+    }
+    return b.toString();
+  }
+
   public static final Random random = new Random();
 
   public static int random(int offset, int range) {
     return offset + random.nextInt(range + 1);
+  }
+
+  public static byte[] randomBytes(int n) {
+    byte[] res = new byte[n];
+    random.nextBytes(res);
+    return res;
+  }
+
+  public static byte randomByte() {
+    return randomBytes(1)[0];
   }
 
   public static char randomVisibleChar() {
