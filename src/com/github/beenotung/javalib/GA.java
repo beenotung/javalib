@@ -295,11 +295,19 @@ public class GA {
       final float init_p_mutation = ga.gaRuntime.p_mutation;
       final float init_a_mutation = ga.gaRuntime.a_mutation;
       int count = 0;
-      ga.init();
+      int gen = 0;
       for (; ; ) {
         ga.next();
-        if (ga.gaRuntime.getFitnessByRank(0) == target_fitness) {
+        gen++;
+        float bestFitness = ga.gaRuntime.getFitnessByRank(0);
+        if (bestFitness == target_fitness) {
           break;
+        } else {
+          out.print("\rbest fitness: ");
+          out.print(bestFitness);
+          out.print("\t generation: ");
+          out.print(gen);
+          out.flush();
         }
         boolean should_reset = false;
         if (ga.gaRuntime.p_mutation > Float.MIN_NORMAL) {
@@ -317,8 +325,10 @@ public class GA {
         if (should_reset) {
           count++;
           ga.reset();
+          gen = 0;
         }
       }
+      out.print('\r');
       return count;
     }
   }

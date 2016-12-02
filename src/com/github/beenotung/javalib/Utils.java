@@ -618,6 +618,12 @@ public class Utils {
     return (x + 256) % 256;
   }
 
+  public static int mod(int v, int base) {
+    while (v < 0)
+      v += base;
+    return v % base;
+  }
+
   public static ArrayList<Character> list(char[] cs) {
     return new ArrayList<>(Arrays.asList(chars(cs)));
   }
@@ -824,6 +830,12 @@ public class Utils {
   public static <A> void update(A[] list, Function<A, A> f) {
     for (int i = 0; i < list.length; i++) {
       list[i] = f.apply(list[i]);
+    }
+  }
+
+  public static void update(byte[] list, int offset, int count, Function<Byte, Byte> f) {
+    for (int i = 0; i < count; i++) {
+      list[i + offset] = f.apply(list[i + offset]);
     }
   }
 
@@ -1689,44 +1701,10 @@ public class Utils {
     }
   }
 
-  public static class IntArray {
-    public int[] data;
-    public int offset;
-    public int len;
-
-    public IntArray(int size) {
-      data = new int[size];
-      len = size;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof IntArray) {
-        IntArray o = (IntArray) obj;
-
-        if (this.len != o.len)
-          return false;
-
-        for (int i = 0; i < len; i++) {
-          if (data[i + offset] != o.data[i + o.offset]) {
-            return false;
-          }
-        }
-        return true;
-      }
-      return super.equals(obj);
-    }
-  }
-
   public static class CharArray {
     public char[] data;
     public int offset;
     public int len;
-
-    @Override
-    public String toString() {
-      return new String(data, offset, len);
-    }
 
     public CharArray(int size) {
       data = new char[size];
@@ -1736,7 +1714,7 @@ public class Utils {
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof CharArray) {
-        CharArray o = (CharArray) obj;
+        Utils.CharArray o = (CharArray) obj;
 
         if (this.len != o.len)
           return false;
@@ -1749,6 +1727,30 @@ public class Utils {
         return true;
       }
       return super.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder b = new StringBuilder(len);
+      b.append(getClass().getName());
+      b.append('[');
+      if (0 < len && len <= 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < len; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+      } else if (len > 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < 9; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+        b.append(" ... ");
+        b.append(data[offset + len - 1]);
+      }
+      b.append(']');
+      return b.toString();
     }
   }
 
