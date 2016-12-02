@@ -1,5 +1,7 @@
 package com.github.beenotung.javalib;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -607,6 +609,13 @@ public class Utils {
       res[i] = xs[i];
     }
     return res;
+  }
+
+  /**
+   * not use casting, it map [-128..127] to [0..255]
+   * */
+  public static int to_int(byte x) {
+    return (x + 256) % 256;
   }
 
   public static ArrayList<Character> list(char[] cs) {
@@ -1741,5 +1750,19 @@ public class Utils {
       }
       return super.equals(obj);
     }
+  }
+
+  public static int gcd(int a, int b) {
+    for (int i = Math.max(a, b); ; i--) {
+      if (a % i == 0 && b % i == 0)
+        return i;
+    }
+  }
+
+  /**
+   * similar to ??? in scala
+   * */
+  public static <A> A $$$() {
+    throw new NotImplementedException();
   }
 }
