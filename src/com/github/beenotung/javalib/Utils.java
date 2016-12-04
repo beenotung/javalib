@@ -614,8 +614,15 @@ public class Utils {
   /**
    * not use casting, it map [-128..127] to [0..255]
    * */
-  public static int to_int(byte x) {
-    return (x + 256) % 256;
+  public static int uint(byte x) {
+    return Byte.toUnsignedInt(x);
+  }
+
+  /**
+   * get from byte array of 256 element, help avoid negative index
+   * */
+  public static byte get(byte[] bs, byte b) {
+    return bs[uint(b)];
   }
 
   public static int mod(int v, int base) {
