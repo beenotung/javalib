@@ -196,6 +196,9 @@ public class Utils {
   public static final long NANO_IN_YEAR = NANO_IN_MONTH * 12L;
 
   public static String nano_to_string(long time) {
+    if (time == 0) {
+      return "0 ns.";
+    }
     StringBuilder b = new StringBuilder();
     if (time > NANO_IN_YEAR) {
       b.append(time / NANO_IN_YEAR);
