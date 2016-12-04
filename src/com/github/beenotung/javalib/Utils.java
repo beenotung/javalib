@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
@@ -161,90 +162,6 @@ public class Utils {
     public String build() {
       return single ? buffer : "[" + buffer + "]";
     }
-  }
-
-  public static String arrayToString_full(Object o) {
-    Class<?> c = o.getClass().getComponentType();
-    ArrayStringBuffer buffer = new ArrayStringBuffer();
-    if (c.isPrimitive()) {
-      switch (c.getTypeName()) {
-        case "int":
-          for (int i : ((int[]) o)) {
-            buffer.add(i);
-          }
-          break;
-        case "double":
-          for (double v : ((double[]) o)) {
-            buffer.add(v);
-          }
-          break;
-        case "float":
-          for (float v : ((float[]) o)) {
-            buffer.add(v);
-          }
-          break;
-        case "byte":
-          for (byte b : ((byte[]) o)) {
-            buffer.add(b);
-          }
-          break;
-        case "char":
-          for (char x : ((char[]) o)) {
-            buffer.add(x);
-          }
-          break;
-        default:
-          throw new Error("unsupported type");
-      }
-    } else {
-      for (Object x : ((Object[]) o)) {
-        buffer.add(objectToString(x));
-      }
-    }
-    return buffer.build();
-  }
-
-  public static String charArrayToString_10(Object array) {
-    final int n = Array.getLength(array);
-    StringBuilder b = new StringBuilder();
-    b.append('"');
-    b.append('"');
-    return b.toString();
-  }
-
-  public static String arrayToString_10(Object array) {
-    final int n = Array.getLength(array);
-    if (n == 0) {
-      return "[]";
-    }
-    Class<?> type = array.getClass().getComponentType();
-    if (type.equals(Character.class) || (type.getTypeName().equals("char"))) {
-      return charArrayToString_10(array);
-    }
-    StringBuilder b = new StringBuilder();
-    b.append('[');
-    b.append(objectToString(Array.get(array, 0)));
-    if (n <= 10) {
-      for (int i = 2; i < n; i++) {
-        b.append(',');
-        b.append(' ');
-        b.append(objectToString(Array.get(array, i)));
-      }
-    } else {
-      for (int i = 2; i < 9; i++) {
-        b.append(',');
-        b.append(' ');
-        b.append(objectToString(Array.get(array, i)));
-      }
-      b.append(' ');
-      b.append('.');
-      b.append('.');
-      b.append('.');
-      b.append(' ');
-      b.append(objectToString(Array.get(array, n - 1)));
-    }
-    b.append(']');
-    return b.toString();
   }
 
   public static String objectToString(Object o) {
@@ -1870,6 +1787,35 @@ public class Utils {
       b.append(']');
       return b.toString();
     }
+  }
+
+  public static boolean array_equal(
+    Object a1, int offset1,
+    Object a2, int offset2,
+    int len
+  ) {
+    if (a1 == null || a2 == null) {
+      return false;
+    }
+    Class c1 = a1.getClass();
+    Class c2 = a2.getClass();
+    if (c1.equals(c2) && c1.getComponentType().equals(c2.getComponentType())) {
+      int n1 = Array.getLength(a1);
+      int n2 = Array.getLength(a2);
+      if (n1 - offset1 < len || n2 - offset2 < len) {
+        return false;
+      }
+      for (int i = 0; i < len; i++) {
+        if (!Objects.equals(
+          Array.get(a1, i + offset1),
+          Array.get(a2, i + offset2)
+        )) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public static class IntArray {
