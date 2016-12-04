@@ -38,16 +38,57 @@ public class Utils {
   public static class PrintMode {
     public static final byte Scala = 0;
     public static final byte Go = 1;
+    public static final byte Erl = 2;
     public static byte mode = Go;
+
+    public static final Function<Object, String> funArrayToString_go = o -> {
+      final int n = Array.getLength(o);
+      if (n == 0) {
+        return "[]";
+      }
+      StringBuilder b = new StringBuilder();
+      b.append('[');
+      b.append(objectToString(Array.get(o, 0)));
+      for (int i = 1; i < n; i++) {
+        b.append(' ');
+        b.append(objectToString(Array.get(o, i)));
+      }
+      b.append(']');
+      return b.toString();
+    };
+    public static final Function<Object, String> funArrayToString_erl = o -> {
+      final int n = Array.getLength(o);
+      if (n == 0) {
+        return "[]";
+      }
+      StringBuilder b = new StringBuilder();
+      b.append('[');
+      b.append(objectToString(Array.get(o, 0)));
+      final int N = Math.min(29, n);
+      for (int i = 1; i < N; i++) {
+        b.append(',');
+        b.append(objectToString(Array.get(o, i)));
+      }
+      if (n > 29) {
+        b.append('|');
+        b.append('.');
+        b.append('.');
+        b.append('.');
+      }
+      b.append(']');
+      return b.toString();
+    };
+
+    public static Function<Object, String> funArrayToString = funArrayToString_erl;
 
     static final Object lock = new Object();
     public static Boolean synchronize = true;
 
     public static void print_go(Object[] os) {
-      out.print(Utils.toString(os[0]));
+      out.print(objectToString(os[0]));
       for (int i = 1; i < os.length; i++) {
-        out.print(" ");
-        out.print(Utils.toString(os[i]));
+        out.print(' ');
+        out.print(objectToString(os[i]));
       }
     }
   }
@@ -98,6 +139,10 @@ public class Utils {
     out.println();
   }
 
+  /**
+   * @deprecated slow
+   * */
+  @Deprecated
   public static class ArrayStringBuffer {
     private String buffer;
     boolean empty = true;
@@ -114,51 +159,112 @@ public class Utils {
     }
 
     public String build() {
-      return single ? buffer : "(" + buffer + ")";
+      return single ? buffer : "[" + buffer + "]";
     }
+  }
+
+  public static String arrayToString_full(Object o) {
+    Class<?> c = o.getClass().getComponentType();
+    ArrayStringBuffer buffer = new ArrayStringBuffer();
+    if (c.isPrimitive()) {
+      switch (c.getTypeName()) {
+        case "int":
+          for (int i : ((int[]) o)) {
+            buffer.add(i);
+          }
+          break;
+        case "double":
+          for (double v : ((double[]) o)) {
+            buffer.add(v);
+          }
+          break;
+        case "float":
+          for (float v : ((float[]) o)) {
+            buffer.add(v);
+          }
+          break;
+        case "byte":
+          for (byte b : ((byte[]) o)) {
+            buffer.add(b);
+          }
+          break;
+        case "char":
+          for (char x : ((char[]) o)) {
+            buffer.add(x);
+          }
+          break;
+        default:
+          throw new Error("unsupported type");
+      }
+    } else {
+      for (Object x : ((Object[]) o)) {
+        buffer.add(objectToString(x));
+      }
+    }
+    return buffer.build();
+  }
+
+  public static String charArrayToString_10(Object array) {
+    final int n = Array.getLength(array);
+    StringBuilder b = new StringBuilder();
+    b.append('"');
+    b.append('"');
+    return b.toString();
+  }
+
+  public static String arrayToString_10(Object array) {
+    final int n = Array.getLength(array);
+    if (n == 0) {
+      return "[]";
+    }
+    Class<?> type = array.getClass().getComponentType();
+    if (type.equals(Character.class) || (type.getTypeName().equals("char"))) {
+      return charArrayToString_10(array);
+    }
+    StringBuilder b = new StringBuilder();
+    b.append('[');
+    b.append(objectToString(Array.get(array, 0)));
+    if (n <= 10) {
+      for (int i = 2; i < n; i++) {
+        b.append(',');
+        b.append(' ');
+        b.append(objectToString(Array.get(array, i)));
+      }
+    } else {
+      for (int i = 2; i < 9; i++) {
+        b.append(',');
+        b.append(' ');
+        b.append(objectToString(Array.get(array, i)));
+      }
+      b.append(' ');
+      b.append('.');
+      b.append('.');
+      b.append('.');
+      b.append(' ');
+      b.append(objectToString(Array.get(array, n - 1)));
+    }
+    b.append(']');
+    return b.toString();
   }
 
   public static String objectToString(Object o) {
     if (o != null && o.getClass().isArray()) {
-      Class<?> c = o.getClass().getComponentType();
-      ArrayStringBuffer buffer = new ArrayStringBuffer();
-      if (c.isPrimitive()) {
-        switch (c.getTypeName()) {
-          case "int":
-            for (int i : ((int[]) o)) {
-              buffer.add(i);
-            }
-            break;
-          case "double":
-            for (double v : ((double[]) o)) {
-              buffer.add(v);
-            }
-            break;
-          case "float":
-            for (float v : ((float[]) o)) {
-              buffer.add(v);
-            }
-            break;
-          case "byte":
-            for (byte b : ((byte[]) o)) {
-              buffer.add(b);
-            }
-            break;
-          case "char":
-            for (char x : ((char[]) o)) {
-              buffer.add(x);
-            }
-            break;
-          default:
-            throw new Error("unsupported type");
+      Class<?> componentType = o.getClass().getComponentType();
+      if (componentType.getTypeName().equals("char")) {
+        return String.valueOf(o);
+      } else if (componentType.equals(Character.class)) {
+        final int n = Array.getLength(o);
+        StringBuilder b = new StringBuilder(n);
+        b.append('"');
+        for (int i = 0; i < n; i++) {
+          b.append((char) Array.get(o, i));
         }
+        b.append('"');
+        return b.toString();
       } else {
-        for (Object x : ((Object[]) o)) {
-          buffer.add(objectToString(x));
-        }
+        return PrintMode.funArrayToString.apply(o);
       }
-      return buffer.build();
-    } else if (instanceOf(Stream.class, o)) {
+    } else if (o instanceof Stream) {
       return objectToString(list(((Stream) o)));
     } else {
       return String.valueOf(o);
@@ -616,10 +722,11 @@ public class Utils {
   }
 
   /**
-   * not use casting, it map [-128..127] to [0..255]
+   * not just casting, it map [-128..127] to [0..255]
+   * copied impl from Byte.toUnsignedInt(base) to avoid call extra stack (AR)
    * */
   public static int uint(byte x) {
-    return Byte.toUnsignedInt(x);
+    return ((int) x) & 0xff;
   }
 
   /**
@@ -1752,6 +1859,62 @@ public class Utils {
           b.append(data[i + offset]);
         }
       } else if (len > 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < 9; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+        b.append(" ... ");
+        b.append(data[offset + len - 1]);
+      }
+      b.append(']');
+      return b.toString();
+    }
+  }
+
+  public static class IntArray {
+    public int[] data;
+    public int offset;
+    public int len;
+
+    public IntArray(int size) {
+      data = new int[size];
+      len = size;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof IntArray) {
+        IntArray o = (IntArray) obj;
+
+        if (this.len != o.len)
+          return false;
+
+        for (int i = 0; i < len; i++) {
+          if (data[i + offset] != o.data[i + o.offset]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return super.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+      if (len < 1) {
+        return "[]";
+      }
+      StringBuilder b = new StringBuilder(len);
+      b.append(getClass().getName());
+      b.append('[');
+      if (len <= 10) {
+        b.append(data[offset]);
+        for (int i = 1; i < len; i++) {
+          b.append(", ");
+          b.append(data[i + offset]);
+        }
+      } else {
         b.append(data[offset]);
         for (int i = 1; i < 9; i++) {
           b.append(", ");
