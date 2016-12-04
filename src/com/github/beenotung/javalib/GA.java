@@ -307,6 +307,10 @@ public class GA {
           out.print(bestFitness);
           out.print("\t generation: ");
           out.print(gen);
+          out.print("\t p_mutation: ");
+          out.print(ga.gaRuntime.p_mutation);
+          out.print("\t a_mutation: ");
+          out.print(ga.gaRuntime.a_mutation);
           out.flush();
         }
         boolean should_reset = false;
@@ -326,6 +330,58 @@ public class GA {
           count++;
           ga.reset();
           gen = 0;
+        }
+      }
+      out.print('\r');
+      return count;
+    }
+
+    public static int partialRestartUntilTargetFitness(final GA ga, final float target_fitness, final float p_mutation_decay_rate, final float a_mutation_decay_rate) {
+      final float init_p_mutation = ga.gaRuntime.p_mutation;
+      final float init_a_mutation = ga.gaRuntime.a_mutation;
+      int count = 0;
+      int gen = 0;
+      for (; ; ) {
+        ga.next();
+        gen++;
+        float bestFitness = ga.gaRuntime.getFitnessByRank(0);
+        if (bestFitness == target_fitness) {
+          break;
+        } else {
+          out.print("\rbest fitness: ");
+          out.print(bestFitness);
+          out.print("\t restart count: ");
+          out.print(count);
+          out.print("\t generation: ");
+          out.print(gen);
+          out.print("\t p_mutation: ");
+          out.print(ga.gaRuntime.p_mutation);
+          out.print("\t a_mutation: ");
+          out.print(ga.gaRuntime.a_mutation);
+          out.flush();
+        }
+        boolean should_reset = false;
+//        if (ga.gaRuntime.p_mutation > Float.MIN_NORMAL) {
+        if (ga.gaRuntime.p_mutation * ga.gaRuntime.n_pop > 0.001) {
+          ga.gaRuntime.p_mutation *= p_mutation_decay_rate;
+        } else {
+          ga.gaRuntime.p_mutation = init_p_mutation;
+          should_reset = true;
+        }
+//        if (ga.gaRuntime.a_mutation > Float.MIN_NORMAL) {
+        if (ga.gaRuntime.a_mutation * ga.gaRuntime.n_pop > 0.001) {
+          ga.gaRuntime.a_mutation *= a_mutation_decay_rate;
+        } else {
+          ga.gaRuntime.a_mutation = init_a_mutation;
+          should_reset = true;
+        }
+        if (should_reset) {
+          count++;
+//          ga.reset();
+//          gen = 0;
+          for (int i = (int) (ga.gaRuntime.p_crossover * ga.gaRuntime.n_pop); i < ga.gaRuntime.n_pop; i++) {
+            ga.randomGene(ga.gaRuntime.genes[i]);
+          }
         }
       }
       out.print('\r');

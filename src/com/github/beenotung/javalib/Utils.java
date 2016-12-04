@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -1776,5 +1777,56 @@ public class Utils {
    * */
   public static <A> A $$$() {
     throw new NotImplementedException();
+  }
+
+  public static class ThreadLocalStorage<A> {
+    public ConcurrentHashMap<Thread, A> data;
+    public Supplier<A> defaultSupplier;
+
+    public ThreadLocalStorage(Supplier<A> defaultSupplier) {
+      data = new ConcurrentHashMap<Thread, A>();
+      this.defaultSupplier = defaultSupplier;
+    }
+
+    public ThreadLocalStorage(int initSize, Supplier<A> defaultSupplier) {
+      data = new ConcurrentHashMap<Thread, A>(initSize);
+      this.defaultSupplier = defaultSupplier;
+    }
+
+    public A current() {
+      A a = data.get(Thread.currentThread());
+      if (a == null) {
+        a = defaultSupplier.get();
+        data.put(Thread.currentThread(), a);
+        return a;
+      } else {
+        return a;
+      }
+    }
+  }
+
+  /**
+   * the Maps in java std api do not have getOrUpdate, mainly for this feature
+   *
+   * minimal requirement (e.g. no size)
+   * user can use any data struct underlay (e.g. use array for speed)
+   *
+   * one application is to implement pure function's cache
+   *   i.e. same argument will be evaluated only once
+   *
+   * it can be used to implement SparseIntegerMap (in android sdk)
+   * */
+  public interface IMap<K, V> {
+    V get(K k);
+
+    default void set(K k, V v) {
+    }
+  }
+
+  public interface IMap2<K1, K2, V> {
+    V get(K1 k1, K2 k2);
+
+    default void set(K1 k1, K2 k2, V v) {
+    }
   }
 }
