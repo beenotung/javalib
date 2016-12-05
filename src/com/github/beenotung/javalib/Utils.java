@@ -1574,12 +1574,47 @@ public class Utils {
     }
   }
 
+  public static void fork_and_wait(Runnable f) throws InterruptedException {
+    fork(f).join();
+  }
+
   public static void fork_and_wait(Runnable[] fs) throws InterruptedException {
     wait(fork(fs));
   }
 
   public static void fork_and_wait(Runnable f, int n_repeat) throws InterruptedException {
     wait(fork(f, n_repeat));
+  }
+
+  public static boolean fork_and_wait_timeout(Runnable f, long nano_limit) throws InterruptedException {
+    long start = System.nanoTime();
+    long timeout = start + nano_limit;
+    final boolean[] done = {false};
+    Thread worker = fork(() -> {
+      f.run();
+      synchronized (done) {
+        done[0] = true;
+      }
+    });
+    Runnable monitor = (() -> {
+      while (System.nanoTime() < timeout) {
+        if (done[0]) {
+          break;
+        }
+        try {
+          Thread.sleep(nano_limit / 1000000L, (int) (nano_limit % (1000000L)));
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+      synchronized (done) {
+        if (!done[0]) {
+          worker.interrupt();
+        }
+      }
+    });
+    fork_and_wait(monitor);
+    return done[0];
   }
 
   public static <A, E> Defer<A, E> defer(Supplier<Either<A, E>> f) {
@@ -1826,6 +1861,30 @@ public class Utils {
     @Override
     public String toString() {
       return PrintMode.funArrayToString.apply(pair3(this.data, this.offset, this.len));
+    }
+  }
+
+  /**
+   * @remark old data will NOT be copied if expanded
+   * */
+  public static void ensure_capacity(ByteArray o, int len) {
+    if (o.data.length < len) {
+      o.data = new byte[len];
+    }
+  }
+
+  public static void ensure_capacity(IntArray o, int len) {
+    if (o.data.length < len) {
+      o.data = new int[len];
+    }
+  }
+
+  public static void reverse(ByteArray x) {
+    byte t;
+    for (int i = 0; i < x.len; i++) {
+      t = x.data[i + x.offset];
+      x.data[i + x.offset] = x.data[x.offset + (x.len - i)];
+      x.data[x.offset + (x.len - i)] = t;
     }
   }
 
