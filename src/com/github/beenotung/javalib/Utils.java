@@ -42,33 +42,40 @@ public class Utils {
     public static final byte Erl = 2;
     public static byte mode = Go;
 
-    public static final Function<Object, String> funArrayToString_go = o -> {
-      final int n = Array.getLength(o);
+    /**
+     * Pair3 : < array, offset, len >
+     * */
+    public static final Function<Pair3<Object, Integer, Integer>, String> funArrayToString_go = p -> {
+      final int n = Array.getLength(p._3);
       if (n == 0) {
         return "[]";
       }
       StringBuilder b = new StringBuilder();
       b.append('[');
-      b.append(objectToString(Array.get(o, 0)));
+      b.append(objectToString(Array.get(p._1, p._2)));
       for (int i = 1; i < n; i++) {
         b.append(' ');
-        b.append(objectToString(Array.get(o, i)));
+        b.append(objectToString(Array.get(p._1, i + p._2)));
       }
       b.append(']');
       return b.toString();
     };
-    public static final Function<Object, String> funArrayToString_erl = o -> {
-      final int n = Array.getLength(o);
+
+    /**
+     * Pair3 : < array, offset, len >
+     * */
+    public static Function<Pair3<Object, Integer, Integer>, String> funArrayToString_erl = p -> {
+      final int n = p._3;
       if (n == 0) {
         return "[]";
       }
       StringBuilder b = new StringBuilder();
       b.append('[');
-      b.append(objectToString(Array.get(o, 0)));
+      b.append(objectToString(Array.get(p._1, p._2)));
       final int N = Math.min(29, n);
       for (int i = 1; i < N; i++) {
         b.append(',');
-        b.append(objectToString(Array.get(o, i)));
+        b.append(objectToString(Array.get(p._1, i + p._2)));
       }
       if (n > 29) {
         b.append('|');
@@ -80,7 +87,35 @@ public class Utils {
       return b.toString();
     };
 
-    public static Function<Object, String> funArrayToString = funArrayToString_erl;
+    /**
+     * Pair3 : < array, offset, len >
+     * */
+    public static Function<Pair3<Object, Integer, Integer>, String> funArrayToString_scala = p -> {
+      final int n = Array.getLength(p._3);
+      if (n == 0) {
+        return "Array()";
+      }
+      StringBuilder b = new StringBuilder();
+      b.append("Array(");
+      b.append(objectToString(Array.get(p._1, p._2)));
+      final int N = Math.min(176, n);
+      for (int i = 1; i < N; i++) {
+        b.append(',');
+        b.append(' ');
+        b.append(objectToString(Array.get(p._1, i + p._2)));
+      }
+      if (n > 176) {
+        b.append(',');
+        b.append('.');
+        b.append('.');
+        b.append('.');
+      } else {
+        b.append(')');
+      }
+      return b.toString();
+    };
+
+    public static Function<Pair3<Object, Integer, Integer>, String> funArrayToString = funArrayToString_erl;
 
     static final Object lock = new Object();
     public static Boolean synchronize = true;
@@ -92,6 +127,10 @@ public class Utils {
         out.print(objectToString(os[i]));
       }
     }
+  }
+
+  public static String arrayToString(Object o) {
+    return PrintMode.funArrayToString.apply(pair3(o, 0, Array.getLength(o)));
   }
 
   public static void print(Object... os) {
@@ -179,7 +218,7 @@ public class Utils {
         b.append('"');
         return b.toString();
       } else {
-        return PrintMode.funArrayToString.apply(o);
+        return arrayToString(o);
       }
     } else if (o instanceof Stream) {
       return objectToString(list(((Stream) o)));
@@ -1714,60 +1753,7 @@ public class Utils {
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder(len);
-      b.append(getClass().getName());
-      b.append('[');
-      if (0 < len && len <= 10) {
-        b.append(data[offset]);
-        for (int i = 1; i < len; i++) {
-          b.append(", ");
-          b.append(data[i + offset]);
-        }
-      } else if (len > 10) {
-        b.append(data[offset]);
-        for (int i = 1; i < 9; i++) {
-          b.append(", ");
-          b.append(data[i + offset]);
-        }
-        b.append(" ... ");
-        b.append(data[offset + len - 1]);
-      }
-      b.append(']');
-      return b.toString();
-    }
-  }
-
-  public static class CharArray {
-    public char[] data;
-    public int offset;
-    public int len;
-
-    public CharArray(int size) {
-      data = new char[size];
-      len = size;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof CharArray) {
-        Utils.CharArray o = (CharArray) obj;
-
-        if (this.len != o.len)
-          return false;
-
-        for (int i = 0; i < len; i++) {
-          if (data[i + offset] != o.data[i + o.offset]) {
-            return false;
-          }
-        }
-        return true;
-      }
-      return super.equals(obj);
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder b = new StringBuilder(len);
-      b.append(getClass().getName());
+      b.append(getClass().getSimpleName());
       b.append('[');
       if (0 < len && len <= 10) {
         b.append(data[offset]);
@@ -1832,45 +1818,14 @@ public class Utils {
     public boolean equals(Object obj) {
       if (obj instanceof IntArray) {
         IntArray o = (IntArray) obj;
-
-        if (this.len != o.len)
-          return false;
-
-        for (int i = 0; i < len; i++) {
-          if (data[i + offset] != o.data[i + o.offset]) {
-            return false;
-          }
-        }
-        return true;
+        return len == o.len && array_equal(this.data, this.offset, o.data, o.offset, len);
       }
       return super.equals(obj);
     }
 
     @Override
     public String toString() {
-      if (len < 1) {
-        return "[]";
-      }
-      StringBuilder b = new StringBuilder(len);
-      b.append(getClass().getName());
-      b.append('[');
-      if (len <= 10) {
-        b.append(data[offset]);
-        for (int i = 1; i < len; i++) {
-          b.append(", ");
-          b.append(data[i + offset]);
-        }
-      } else {
-        b.append(data[offset]);
-        for (int i = 1; i < 9; i++) {
-          b.append(", ");
-          b.append(data[i + offset]);
-        }
-        b.append(" ... ");
-        b.append(data[offset + len - 1]);
-      }
-      b.append(']');
-      return b.toString();
+      return PrintMode.funArrayToString.apply(pair3(this.data, this.offset, this.len));
     }
   }
 
