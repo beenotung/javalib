@@ -112,7 +112,7 @@ public class GA {
     public IMutation DefaultIMutation() {
       return (gaRuntime, gene, r) -> foreach(gene.length, i -> {
         if (r.nextFloat() < gaRuntime.a_mutation) {
-          gene[i] ^= r.nextInt()g;
+          gene[i] ^= r.nextInt();
         }
       });
     }
