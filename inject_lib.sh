@@ -12,7 +12,7 @@ tmp="/tmp/inject_lib";
 lib_url="https://github.com/beenotung/javalib.git";
 lib_class="Utils";
 lib_root="$tmp/javalib"
-lib_file="$lib_root/src/github.com/beenotung/javalib/$lib_class.java"
+lib_file="$lib_root/src/com/github/beenotung/javalib/$lib_class.java"
 key="_inject_lib_"
 
 ## param ## TODO use arguments
